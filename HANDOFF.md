@@ -139,7 +139,7 @@ The root README now describes the worksheet for users and the layout and command
 ### State at end of session 3
 
 - Every check passes: 31 tests, build byte-identical, headless render clean. Not committed at the time of writing; Jeff had not asked for a commit.
-- Still open: R7.1 through R7.5; the invisible keyboard focus ring on the file-load control (the real input is 1px); whether the main file and Codex's should agree on the carry-forward cap (the main file lets values exceed 1, Codex's caps below 1).
+- Still open: R7.1 through R7.5; whether the main file and Codex's should agree on the carry-forward cap (the main file lets values exceed 1, Codex's caps below 1).
 
 ### Reorderable list and two tie rules (same session)
 
@@ -160,3 +160,7 @@ Jeff asked for a third option: carry forward, then list order, with no step afte
 ### Source file renamed (same session)
 
 Jeff asked for the source page and the built file to share a name, since `app.html` was uninformative. `src/app.html` is now `src/sabbatical-allocation.html`; the earlier mentions of `app.html` in this file are history. `build.js`, the docs, and the test comment were updated.
+
+### Focus ring on the file-load control (same session)
+
+The hidden 1px file input received keyboard focus, so the focus ring was invisible. Fixed with `.filebtn:focus-within`, which draws the ring on the visible label. No logic change.

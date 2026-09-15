@@ -55,6 +55,7 @@
   input:invalid { border-color: var(--error); }
   .filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
   .filebtn { position: relative; display: inline-block; }
+  .filebtn:focus-within { outline: 2px solid var(--pool); outline-offset: 2px; }   /* the real input is 1px and transparent, so show the ring on the label */
 
   /* seat rule */
   .rule-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 4px; font-size: 16px; }
