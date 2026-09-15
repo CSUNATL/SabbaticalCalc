@@ -115,3 +115,44 @@ Found and not yet fixed: the seat pool is computed in floating point and is off 
 2. Either reconstruct `src/`, `build.js`, `package.json`, and `test/` from the single file so `npm run check` works as CLAUDE.md describes, or rewrite CLAUDE.md and ARCHITECTURE.md for a single-file repository. Turn this session's scratch checks (documented example, fuzz invariants, seven tie scenarios) into the checked-in test suite.
 3. Replace the root README and drop or repurpose the stub `index.html` (make the worksheet `index.html` if GitHub Pages is wanted).
 4. Confirm R7.1 and R7.2 against the policy text.
+
+## Third session: Claude Code, September 15, 2026
+
+Jeff asked for three things: fix the seat-pool arithmetic, taking the percentage to ten-thousandths rather than hundredths; reconstruct the `src/` and test layout; replace the root README and drop the stub `index.html`.
+
+### Seat-pool arithmetic
+
+`computeSeatPool` now scales the percentage to an integer in ten-thousandths of a percent (12.3456% → 123456), multiplies by the total eligible faculty, and splits the product over 1,000,000 with integer `%`. Round down, up, and nearest are decided from the integer remainder; "nearest" rounds an exact half up, which is now stated on the page. The exact product is shown as a decimal string built from the integers (at most six places, trailing zeros removed), so the page never displays a floating-point artifact. A percentage with more than four decimal places is an input error rather than being rounded silently. The percent input's step is 0.0001. The two cases that were wrong (375 × 18.4% → 68; 250 × 64.4% rounded up → 162) are now tests, along with a 5,000-case comparison against a BigInt reference.
+
+### Reconstruction
+
+The single file was split at its own `/* ---------- UI ---------- */` comment: everything before it became `src/logic.js` (with the `module.exports` guard added), the rest became `src/app.html` with the `/*__LOGIC__*/` marker in place of the logic. `build.js` reproduced the checked-in file byte-for-byte apart from two blank lines before any other change was made. The deliverable moved from the repository root to `dist/sabbatical-allocation.html`, as CLAUDE.md and ARCHITECTURE.md had described all along. `package.json` has the three scripts and no dependencies; `npm run check` builds first, then tests, so a stale `dist/` is caught by `test/build.test.js`. A `.gitattributes` pins LF endings so the build is identical on both platforms.
+
+`test/logic.test.js` has 24 tests: seat-pool rules, Hamilton apportionment, the CSUN test data's full outcome, round-1 inclusion and later exclusion, unallocated seats, every tie-break rule and carry-forward outcome, every validation message, and a 3,000-case fuzz of the R4.7 invariants. `test/build.test.js` has 4: `dist/` is current, the file is self-contained, the script parses and the logic runs without a DOM, and the UI's ids and print handlers are present. `tools/screenshot.py` was rewritten: it renders at 1280px, loads the test data, checks the seat sentence and the two-round outcome, checks that no results table scrolls horizontally, exercises the 18.4% case and a validation error, and fails on any script error. All of it passes on this machine.
+
+Node was not installed on Jeff's machine; Node 24 LTS was installed with `winget install OpenJS.NodeJS.LTS --scope user`. Playwright and its Chromium were installed with pip for the screenshot tool.
+
+### README and stub
+
+The root README now describes the worksheet for users and the layout and commands for developers. The stub `index.html` was deleted; there is no GitHub Pages copy.
+
+### State at end of session 3
+
+- Every check passes: 31 tests, build byte-identical, headless render clean. Not committed at the time of writing; Jeff had not asked for a commit.
+- Still open: R7.1 through R7.5; the invisible keyboard focus ring on the file-load control (the real input is 1px); whether the main file and Codex's should agree on the carry-forward cap (the main file lets values exceed 1, Codex's caps below 1).
+
+### Reorderable list and two tie rules (same session)
+
+Jeff asked for the college list to be drag-reorderable and for two selectable tie rules after carry forward: (1) list order, topmost wins, then eligible faculty; (2) eligible faculty only, the default. Reordering the list is to select rule 1 automatically, and the user may switch back. Under rule 2 a tie that remains unresolved must be clearly flagged.
+
+Built as specified. Each input row has a position number, a drag handle (native HTML5 drag-and-drop, no library; the handle alone starts a drag so text in the inputs stays selectable), and move-up and move-down buttons for keyboard and touch. A select under the seat rule chooses the tie rule; moving a row sets it to list order. The rule and the list order are saved in the inputs file (format version 3; older files load as eligible faculty) and stated in the record and the CSV.
+
+Name is no longer a tie-break rule under either method. Under rule 1, list positions are unique, so a tie is always resolved. Under rule 2, colleges with the same fractional part, the same carry forward, and the same headcount are unresolved. Decision made without instruction and flagged here: the seat is still placed, provisionally with the college listed higher, so that the rest of the calculation and the invariants hold, and the page flags it in five places: a red alert under "Where the seats went" naming the round and the remedy; "won tie, unresolved" and "lost tie, unresolved" labels with a red row edge in the round, final, and carry-forward tables; a sentence in the round narrative naming the colleges and their list positions; a note in the carry-forward report that the dependent carry forwards are provisional; and the record. Choosing the list-order rule with the same list gives the same seats, resolved.
+
+Under rule 1 the third step, eligible faculty, can never be reached because positions are unique; it is implemented as specified and the method text says so.
+
+Tests: 31, including both rules, unresolved detection at the cutoff (a tie that does not straddle the cutoff is not a tie), provisional placement by position rather than array order, and a fuzz check that `tieDecidedBy` is consistent with the winner and loser under whichever rule was used. `tools/screenshot.py` also moves a row with the arrow button and checks that the rule switches and can be switched back. Drag-and-drop was exercised in headless Chromium by a scratch script, not by the checked-in tool.
+
+### Third tie rule (same session)
+
+Jeff asked for a third option: carry forward, then list order, with no step after that, flagging the tie if still unresolved. Added as `'list-only'`. Two colleges cannot share a list position, so under this rule the flag can never fire; Jeff was told this and the rule was built as specified. The flag is implemented generically: `hamilton` now walks the ordered steps of whichever rule is selected and reports `'unresolved'` when every step leaves the last winner and first loser equal, so any future rule gets the same treatment. Reordering the list now switches the rule to list order only when the eligible-faculty rule is in use; a list rule already chosen is kept. The unresolved texts name the rule in use instead of assuming eligible faculty. Tests: 32.

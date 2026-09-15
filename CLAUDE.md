@@ -9,7 +9,7 @@ Read `REQUIREMENTS.md` before changing behavior and `ARCHITECTURE.md` before cha
 ```
 npm test          # node --test, runs test/*.test.js against src/logic.js
 npm run build     # splices src/logic.js into src/app.html -> dist/sabbatical-allocation.html
-npm run check     # test then build
+npm run check     # build then test (the build test fails if dist/ is stale)
 python3 tools/screenshot.py   # optional: headless render of dist/, prints JS errors, writes full.png
 ```
 
@@ -19,14 +19,14 @@ Node 20+ only. No `npm install` is needed; there are no dependencies. Do not add
 
 - The deliverable stays one `.html` file with no network requests, no external scripts, fonts, or stylesheets. It must work from `file://` with the browser offline.
 - `src/logic.js` is pure: no DOM, no globals other than its function definitions, and it must keep working under Node (`module.exports` guard at the bottom). All allocation arithmetic lives there and nowhere else.
-- Apportionment comparisons use integer arithmetic (`seats * eligible` mod `total`), never rounded decimals. Do not "simplify" this to floating point.
-- The allocation rules in REQUIREMENTS.md sections 3 and 4 are policy, not implementation detail. Do not change round-1 participation, the exclusion of settled colleges from later rounds, the tie-break order (carry forward, then headcount, then name), or the carry-forward year-end rule without an explicit request.
+- Apportionment comparisons use integer arithmetic (`seats * eligible` mod `total`), never rounded decimals. Do not "simplify" this to floating point. The seat pool likewise uses the percentage in ten-thousandths as an integer.
+- The allocation rules in REQUIREMENTS.md sections 3 and 4 are policy, not implementation detail. Do not change round-1 participation, the exclusion of settled colleges from later rounds, the three tie-break rules (carry forward, then headcount; or list order then headcount; or list order alone; name is never a rule), the unresolved-tie flag, or the carry-forward year-end rule without an explicit request.
 - Never commit a `dist/` file that was not produced by `npm run build` from the current `src/`.
 
 ## Workflow
 
 1. Edit `src/logic.js` and/or `src/app.html`. The `/*__LOGIC__*/` marker in `app.html` is where `build.js` inserts the logic; keep it.
-2. `npm run check`. Every test must pass. If you change allocation behavior, add or update a test first.
+2. `npm run check`. Every test must pass. If you change allocation behavior, add or update a test first. `test/build.test.js` compares `dist/` with the build output, so `npm test` alone fails after a `src/` edit until you rebuild.
 3. If UI changed, run `tools/screenshot.py` (needs `pip install playwright && playwright install chromium`) and look at `full.png`. Check that the round tables still fit at 1280px wide without horizontal scrolling and that no JS errors are printed.
 4. Update ARCHITECTURE.md or REQUIREMENTS.md if the change affects what they describe.
 
