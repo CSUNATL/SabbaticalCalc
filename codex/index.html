@@ -132,6 +132,29 @@
       font-size: 1.05rem;
     }
 
+    .method-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-top: 22px;
+      padding: 9px 13px;
+      color: #fff;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 9px;
+      font-size: .84rem;
+      font-weight: 800;
+      text-decoration: none;
+      transition: background .15s ease, border-color .15s ease;
+    }
+
+    .method-link:hover {
+      background: rgba(255,255,255,.15);
+      border-color: rgba(255,255,255,.42);
+    }
+
+    .method-link svg { width: 17px; height: 17px; }
+
     .page {
       position: relative;
       z-index: 2;
@@ -226,6 +249,8 @@
       gap: 10px;
     }
 
+    .dataset-actions { display: flex; gap: 10px; }
+
     label {
       display: block;
       margin-bottom: 6px;
@@ -313,7 +338,7 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .input-table { min-width: 720px; }
+    .input-table { min-width: 920px; }
 
     th {
       padding: 11px 12px;
@@ -342,8 +367,8 @@
       font-weight: 800;
     }
 
-    .input-table .name-cell { width: 43%; }
-    .input-table .number-cell { width: 23%; }
+    .input-table .name-cell { width: 40%; }
+    .input-table .number-cell { width: 20%; }
     .input-table .action-cell { width: 38px; padding-top: 16px; }
 
     .mobile-label { display: none; }
@@ -398,6 +423,7 @@
       background: rgba(255,255,255,.72);
       border: 1px solid rgba(17,50,73,.12);
       border-radius: 13px;
+      scroll-margin-top: 18px;
     }
 
     .method-panel summary {
@@ -418,18 +444,79 @@
     .summary-chevron { transition: transform .2s ease; }
     details[open] > summary .summary-chevron { transform: rotate(180deg); }
 
-    .method-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0;
+    .method-guide {
+      padding: 26px 28px 28px;
       border-top: 1px solid var(--line);
       background: #fff;
     }
 
-    .method-item { padding: 20px; border-right: 1px solid var(--line); }
-    .method-item:last-child { border-right: 0; }
-    .method-item strong { display: block; margin-bottom: 6px; color: var(--navy); }
-    .method-item p { margin: 0; color: var(--muted); font-size: .84rem; }
+    .method-intro {
+      max-width: 850px;
+      margin: 0 0 23px;
+      color: #4f626f;
+      font-size: .92rem;
+    }
+
+    .method-steps {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 13px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .method-step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 13px;
+      padding: 17px;
+      background: #f8faf9;
+      border: 1px solid #e0e8e8;
+      border-radius: 11px;
+    }
+
+    .method-number {
+      display: grid;
+      place-items: center;
+      width: 29px;
+      height: 29px;
+      color: #fff;
+      background: var(--teal);
+      border-radius: 50%;
+      font-size: .74rem;
+      font-weight: 900;
+    }
+
+    .method-step strong { display: block; margin: 2px 0 5px; color: var(--navy); }
+    .method-step p { margin: 0; color: var(--muted); font-size: .82rem; }
+
+    .method-formula {
+      display: inline-block;
+      margin: 7px 0 2px;
+      padding: 5px 8px;
+      color: var(--navy);
+      background: var(--blue-soft);
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: .76rem;
+      font-weight: 750;
+    }
+
+    .method-verification {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      margin: 17px 0 0;
+      padding: 14px 16px;
+      color: #405965;
+      background: var(--teal-soft);
+      border-radius: 9px;
+      font-size: .82rem;
+    }
+
+    .method-verification svg { flex: 0 0 auto; color: var(--teal-dark); }
 
     .results { margin-top: 28px; }
 
@@ -574,6 +661,33 @@
     .college-name { color: var(--navy); font-weight: 800; }
     .allocation-number { color: var(--teal-dark); font-size: 1.08rem; font-weight: 900; }
 
+    .carry-card { margin-top: 16px; }
+    .carry-value { color: var(--navy); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 850; }
+    .carry-value-next { color: var(--teal-dark); font-size: .96rem; }
+    .tie-activity { max-width: 440px; color: #526571; font-size: .8rem; }
+    .tie-activity div + div { margin-top: 5px; }
+    .carry-instruction {
+      margin: 0;
+      padding: 13px 18px;
+      color: #405965;
+      background: var(--teal-soft);
+      border-top: 1px solid #cce5e1;
+      font-size: .8rem;
+    }
+
+    .tie-badge {
+      display: inline-flex;
+      margin-right: 5px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: .67rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .tie-won { color: #236044; background: #e9f5ee; }
+    .tie-lost { color: #815a10; background: #fff3d8; }
+
     .status-pill {
       display: inline-flex;
       padding: 4px 8px;
@@ -653,7 +767,7 @@
     .round-stat strong { display: block; margin-top: 2px; color: var(--navy); font-size: .97rem; }
 
     .audit-wrap { overflow-x: auto; }
-    .audit-table { min-width: 1200px; }
+    .audit-table { min-width: 1420px; }
     .audit-table th { padding: 10px 11px; background: #fff; }
     .audit-table td { padding: 12px 11px; font-size: .8rem; }
     .audit-table .numeric { text-align: right; }
@@ -727,9 +841,7 @@
 
     @media (max-width: 850px) {
       .metric-grid { grid-template-columns: repeat(2, 1fr); }
-      .method-grid { grid-template-columns: 1fr; }
-      .method-item { border-right: 0; border-bottom: 1px solid var(--line); }
-      .method-item:last-child { border-bottom: 0; }
+      .method-steps { grid-template-columns: 1fr; }
       .formula-card { grid-template-columns: 1fr; gap: 8px; }
       .formula-symbol { transform: rotate(90deg); justify-self: start; margin-left: 10px; }
       .round-explainer { grid-template-columns: repeat(2, 1fr); }
@@ -738,13 +850,16 @@
     @media (max-width: 640px) {
       .masthead-inner { padding: 24px 18px 68px; }
       .brand { margin-bottom: 36px; }
+      .method-link { margin-top: 18px; }
       .page { padding: 0 12px 48px; }
       .card-head, .controls-row, .form-actions { padding-left: 18px; padding-right: 18px; }
       .card-head, .controls-row, .form-actions, .results-header { align-items: stretch; flex-direction: column; }
+      .method-guide { padding: 20px 18px; }
       .policy-chip { align-self: flex-start; }
       .count-group { width: 100%; }
       #college-count { flex: 1; }
-      .controls-row > .button { width: 100%; }
+      .dataset-actions { width: 100%; flex-direction: column; }
+      .dataset-actions .button { width: 100%; }
       .input-table-wrap { overflow: visible; padding: 0 18px; }
       .input-table, .input-table tbody, .input-table tr, .input-table td { display: block; min-width: 0; width: 100%; }
       .input-table thead { display: none; }
@@ -801,6 +916,10 @@
       <p class="eyebrow">Transparent allocation worksheet</p>
       <h1>Sabbatical seat allocation</h1>
       <p class="dek">Turn eligible-faculty and applicant counts into a policy-compliant allocation—with every round and arithmetic step available for review.</p>
+      <a class="method-link" id="method-link" href="#calculation-method">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.6 1.9c-.9.6-1.4 1-1.4 2.1M12 17h.01"/></svg>
+        How the allocation is calculated
+      </a>
     </div>
   </header>
 
@@ -810,7 +929,7 @@
         <div>
           <p class="step-label"><span class="step-dot"></span> Step 1 · Enter counts</p>
           <h2 id="inputs-title">College information</h2>
-          <p class="supporting">Use whole numbers. Applicants cannot exceed eligible faculty.</p>
+          <p class="supporting">Use whole numbers for counts. Carry forward is a prior-year fraction from 0 up to, but not including, 1.</p>
         </div>
         <div class="policy-chip" title="Any fractional result is rounded up to the next whole seat.">
           <strong>12%</strong> of eligible faculty · fractions round up
@@ -826,10 +945,16 @@
             </div>
             <button class="button button-secondary" id="apply-count" type="button">Apply</button>
           </div>
-          <button class="button button-secondary" id="reset-colleges" type="button">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-            Reset college list
-          </button>
+          <div class="dataset-actions">
+            <button class="button button-secondary" id="reset-colleges" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset college list
+            </button>
+            <button class="button button-secondary" id="load-test-data" type="button">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16M6 16V9m4 7V5m4 11v-4m4 4V7"/></svg>
+              Load test dataset
+            </button>
+          </div>
         </div>
 
         <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
@@ -842,6 +967,7 @@
                 <th scope="col">College name</th>
                 <th scope="col">Eligible faculty</th>
                 <th scope="col">Applicants</th>
+                <th scope="col" title="Fraction carried from a previous year">Current carry forward</th>
                 <th scope="col"><span class="screen-reader-only">Remove</span></th>
               </tr>
             </thead>
@@ -865,24 +991,47 @@
       </form>
     </section>
 
-    <details class="method-panel">
+    <details class="method-panel" id="calculation-method">
       <summary>
-        <span>Policy choices used by this calculator</span>
+        <span>How the allocation is calculated</span>
         <svg class="summary-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
       </summary>
-      <div class="method-grid">
-        <div class="method-item">
-          <strong>Available seats</strong>
-          <p>Total eligible faculty × 12%, with any fractional result rounded up to the next whole seat.</p>
-        </div>
-        <div class="method-item">
-          <strong>Hamilton tie-break</strong>
-          <p>If fractional remainders tie: more eligible faculty first, then college name A–Z (case-insensitive), then entry order.</p>
-        </div>
-        <div class="method-item">
-          <strong>Returned seats</strong>
-          <p>Seats above a college’s unfunded applicant count return to the pool and are reallocated only among colleges with remaining applicants.</p>
-        </div>
+      <div class="method-guide">
+        <p class="method-intro">The calculator follows the same sequence each time. Eligible-faculty counts determine proportional shares; applicant counts only limit how many of those seats a college can actually use.</p>
+        <ol class="method-steps">
+          <li class="method-step">
+            <span class="method-number">1</span>
+            <div><strong>Determine the total seat pool</strong><p>Add eligible faculty across all colleges and take 12%. Any fractional result is rounded up to the next whole seat. For example, 101 eligible faculty produces 12.12, which becomes 13 seats.</p></div>
+          </li>
+          <li class="method-step">
+            <span class="method-number">2</span>
+            <div><strong>Calculate each exact Hamilton quota</strong><p>In round one, every college participates—even a college with no applicants. Its exact proportional quota is:</p><span class="method-formula">round pool × college eligible ÷ participating eligible</span></div>
+          </li>
+          <li class="method-step">
+            <span class="method-number">3</span>
+            <div><strong>Award the whole-number portions</strong><p>Each college first receives the whole-number part (the floor) of its exact quota. These floors are added to find how many seats remain in the round.</p></div>
+          </li>
+          <li class="method-step">
+            <span class="method-number">4</span>
+            <div><strong>Award the largest remainders and resolve ties</strong><p>The remaining seats go one at a time to the largest fractional quota parts. For equal fractions, the larger current carry-forward wins first; remaining ties use more eligible faculty, then college name A–Z (case-insensitive), then original entry order.</p></div>
+          </li>
+          <li class="method-step">
+            <span class="method-number">5</span>
+            <div><strong>Apply the applicant limit</strong><p>A college can use no more seats than it has applicants not yet funded. Any portion of its Hamilton offer above that limit is returned to the seat pool.</p></div>
+          </li>
+          <li class="method-step">
+            <span class="method-number">6</span>
+            <div><strong>Redistribute returned seats</strong><p>Each later round repeats the Hamilton calculation using the returned pool, but only colleges with unfunded applicants participate. Their eligible-faculty counts remain the proportional weights.</p></div>
+          </li>
+          <li class="method-step">
+            <span class="method-number">7</span>
+            <div><strong>Stop and report the outcome</strong><p>The process stops when no seats remain or no college has an unfunded applicant. Any seats left are unallocated. Prior carry-forward persists until a college wins a cutoff tie, when it clears. A tied loser with unmet demand and no prior value carries that tied fraction into next year.</p></div>
+          </li>
+        </ol>
+        <p class="method-verification">
+          <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          <span><strong>How to verify a result:</strong> After calculation, open any round in the audit trail. It shows the exact quota arithmetic, floor, fractional part, remainder priority, Hamilton offer, applicants before the round, seats funded, seats returned, and applicants still unfunded.</span>
+        </p>
       </div>
     </details>
 
@@ -920,6 +1069,18 @@
           <span class="check-badge" id="allocation-check"></span>
         </div>
         <div class="result-table-wrap" id="final-table"></div>
+      </section>
+
+      <section class="card result-card carry-card" aria-labelledby="carry-forward-title">
+        <div class="section-head">
+          <div>
+            <h3 id="carry-forward-title">Carry-forward report for next year</h3>
+            <p>Documents prior balances, cutoff tie outcomes, and the value each college should enter next year.</p>
+          </div>
+          <span class="check-badge" id="carry-forward-summary"></span>
+        </div>
+        <div class="result-table-wrap" id="carry-forward-table"></div>
+        <p class="carry-instruction"><strong>Next-year instruction:</strong> Use the “Next year” value shown here as that college’s current carry-forward input in the next allocation cycle.</p>
       </section>
 
       <section class="rounds-section" aria-labelledby="rounds-title">
@@ -983,9 +1144,12 @@
             denominator: totalWeight,
             base: 0,
             remainderNumerator: 0,
+            currentCarryForward: Number.isFinite(college.carryForward) ? college.carryForward : 0,
             rank: null,
             bonus: 0,
-            offered: 0
+            offered: 0,
+            tieAtCutoff: false,
+            tieOutcome: null
           };
         }
         if (college.eligible !== 0 && pool > Math.floor(MAX_SAFE / college.eligible)) {
@@ -999,9 +1163,12 @@
           denominator: totalWeight,
           base: base,
           remainderNumerator: numerator % totalWeight,
+          currentCarryForward: Number.isFinite(college.carryForward) ? college.carryForward : 0,
           rank: null,
           bonus: 0,
-          offered: base
+          offered: base,
+          tieAtCutoff: false,
+          tieOutcome: null
         };
       });
 
@@ -1012,6 +1179,10 @@
         if (a.remainderNumerator !== b.remainderNumerator) {
           return b.remainderNumerator - a.remainderNumerator;
         }
+        const carryA = Number.isFinite(colleges[a.index].carryForward) ? colleges[a.index].carryForward : 0;
+        const carryB = Number.isFinite(colleges[b.index].carryForward) ? colleges[b.index].carryForward : 0;
+        const carryDifference = carryB - carryA;
+        if (carryDifference !== 0) return carryDifference;
         const eligibleDifference = colleges[b.index].eligible - colleges[a.index].eligible;
         if (eligibleDifference !== 0) return eligibleDifference;
         const nameDifference = compareNames(colleges[a.index].name, colleges[b.index].name);
@@ -1023,6 +1194,19 @@
       for (let position = 0; position < remainderSeats; position += 1) {
         ranked[position].bonus = 1;
         ranked[position].offered += 1;
+      }
+
+      if (remainderSeats > 0 && remainderSeats < ranked.length) {
+        const lastWinner = ranked[remainderSeats - 1];
+        const firstLoser = ranked[remainderSeats];
+        if (lastWinner.remainderNumerator > 0 && lastWinner.remainderNumerator === firstLoser.remainderNumerator) {
+          ranked.forEach(function (record) {
+            if (record.remainderNumerator === lastWinner.remainderNumerator) {
+              record.tieAtCutoff = true;
+              record.tieOutcome = record.bonus ? "won" : "lost";
+            }
+          });
+        }
       }
 
       return {
@@ -1050,6 +1234,9 @@
         if (college.applicants > college.eligible) {
           throw new Error(college.name + " has more applicants than eligible faculty.");
         }
+        if (!Number.isFinite(college.carryForward) || college.carryForward < 0 || college.carryForward >= 1) {
+          throw new Error(college.name + " has an invalid carry-forward fraction.");
+        }
         if (eligibleTotal > MAX_SAFE - college.eligible) {
           throw new Error("The eligible-faculty total is too large to calculate safely.");
         }
@@ -1063,7 +1250,8 @@
         return {
           name: college.name.trim(),
           eligible: college.eligible,
-          applicants: college.applicants
+          applicants: college.applicants,
+          carryForward: college.carryForward === undefined ? 0 : college.carryForward
         };
       });
       const totalEligible = validateColleges(colleges);
@@ -1071,6 +1259,9 @@
       const availableSeats = calculateAvailableSeats(totalEligible);
       const remainingApplicants = colleges.map(function (college) { return college.applicants; });
       const allocations = colleges.map(function () { return 0; });
+      const workingColleges = colleges.map(function (college) { return Object.assign({}, college); });
+      const nextCarryForwards = colleges.map(function (college) { return college.carryForward; });
+      const tieEvents = [];
       const rounds = [];
       let pool = availableSeats;
       let roundNumber = 1;
@@ -1084,7 +1275,7 @@
 
         if (participantIndexes.length === 0) break;
 
-        const distribution = hamilton(colleges, participantIndexes, pool);
+        const distribution = hamilton(workingColleges, participantIndexes, pool);
         let returnedSeats = 0;
         let fundedThisRound = 0;
 
@@ -1101,6 +1292,30 @@
           allocations[index] += funded;
           fundedThisRound += funded;
           returnedSeats += returned;
+          if (hamiltonRecord.tieAtCutoff) {
+            const fraction = hamiltonRecord.denominator
+              ? hamiltonRecord.remainderNumerator / hamiltonRecord.denominator
+              : 0;
+            const carryForwardBefore = workingColleges[index].carryForward;
+            let createdCarryForward = false;
+            if (hamiltonRecord.tieOutcome === "won") {
+              workingColleges[index].carryForward = 0;
+              nextCarryForwards[index] = 0;
+            } else if (remainingApplicants[index] > 0 && nextCarryForwards[index] === 0) {
+              nextCarryForwards[index] = fraction;
+              createdCarryForward = true;
+            }
+            tieEvents.push({
+              round: roundNumber,
+              index: index,
+              outcome: hamiltonRecord.tieOutcome,
+              fraction: fraction,
+              carryForwardBefore: carryForwardBefore,
+              createdCarryForward: createdCarryForward,
+              nextCarryForwardAfter: nextCarryForwards[index],
+              applicantsAfter: remainingApplicants[index]
+            });
+          }
           return Object.assign({}, hamiltonRecord, {
             applicantsBefore: applicantsBefore,
             funded: funded,
@@ -1137,6 +1352,8 @@
         unallocatedSeats: availableSeats - allocatedSeats,
         allocations: allocations,
         remainingApplicants: remainingApplicants,
+        nextCarryForwards: nextCarryForwards,
+        tieEvents: tieEvents,
         rounds: rounds
       };
     }
@@ -1172,6 +1389,18 @@
       { name: "Mike Curb College of Arts, Media, & Communication", eligible: 0, applicants: 0 },
       { name: "Michael D. Eisner College of Education", eligible: 0, applicants: 0 }
     ]);
+    const testDataset = Object.freeze([
+      { name: "Andrew J. Anagnost College of Engineering and Computer Science", eligible: 33, applicants: 6 },
+      { name: "Health & Human Development", eligible: 64, applicants: 12 },
+      { name: "Humanities", eligible: 39, applicants: 13 },
+      { name: "Counseling", eligible: 9, applicants: 0 },
+      { name: "Social & Behavioral Sciences", eligible: 75, applicants: 21 },
+      { name: "Science & Mathematics", eligible: 45, applicants: 16 },
+      { name: "David Nazarian College of Business & Economics", eligible: 38, applicants: 13 },
+      { name: "Library", eligible: 18, applicants: 2 },
+      { name: "Mike Curb College of Arts, Media, & Communication", eligible: 39, applicants: 10 },
+      { name: "Michael D. Eisner College of Education", eligible: 22, applicants: 7 }
+    ]);
     let hasResults = false;
 
     const icons = {
@@ -1199,17 +1428,23 @@
       });
     }
 
+    function formatCarryForward(value) {
+      return formatDecimal(value || 0, 6);
+    }
+
     function createRow(index, values) {
       const row = document.createElement("tr");
       row.dataset.index = index;
       const name = values && values.name !== undefined ? values.name : "College " + (index + 1);
       const eligible = values && values.eligible !== undefined ? values.eligible : 0;
       const applicants = values && values.applicants !== undefined ? values.applicants : 0;
+      const carryForward = values && values.carryForward !== undefined ? values.carryForward : 0;
       row.innerHTML =
         '<td class="row-number" aria-hidden="true">' + (index + 1) + '</td>' +
         '<td class="name-cell"><label class="mobile-label" for="name-' + index + '">College name</label><input id="name-' + index + '" data-field="name" type="text" maxlength="120" value="' + escapeHtml(name) + '" aria-describedby="name-error-' + index + '"><p class="field-error" id="name-error-' + index + '"></p></td>' +
         '<td class="number-cell"><label class="mobile-label" for="eligible-' + index + '">Eligible faculty</label><input id="eligible-' + index + '" data-field="eligible" type="number" min="0" step="1" inputmode="numeric" value="' + escapeHtml(eligible) + '" aria-describedby="eligible-error-' + index + '"><p class="field-error" id="eligible-error-' + index + '"></p></td>' +
         '<td class="number-cell"><label class="mobile-label" for="applicants-' + index + '">Applicants</label><input id="applicants-' + index + '" data-field="applicants" type="number" min="0" step="1" inputmode="numeric" value="' + escapeHtml(applicants) + '" aria-describedby="applicants-error-' + index + '"><p class="field-error" id="applicants-error-' + index + '"></p></td>' +
+        '<td class="number-cell"><label class="mobile-label" for="carry-' + index + '">Current carry forward</label><input id="carry-' + index + '" data-field="carryForward" type="number" min="0" max="0.999999" step="0.000001" inputmode="decimal" value="' + escapeHtml(carryForward) + '" aria-describedby="carry-error-' + index + '"><p class="field-error" id="carry-error-' + index + '"></p></td>' +
         '<td class="action-cell"><button class="button button-ghost remove-row" type="button" aria-label="Remove ' + escapeHtml(name) + '" title="Remove college">' +
         '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m4 4v7m6-7v7"/></svg></button></td>';
       return row;
@@ -1220,7 +1455,8 @@
         return {
           name: row.querySelector('[data-field="name"]').value,
           eligible: row.querySelector('[data-field="eligible"]').value,
-          applicants: row.querySelector('[data-field="applicants"]').value
+          applicants: row.querySelector('[data-field="applicants"]').value,
+          carryForward: row.querySelector('[data-field="carryForward"]').value
         };
       });
     }
@@ -1302,11 +1538,14 @@
         const nameInput = row.querySelector('[data-field="name"]');
         const eligibleInput = row.querySelector('[data-field="eligible"]');
         const applicantsInput = row.querySelector('[data-field="applicants"]');
+        const carryForwardInput = row.querySelector('[data-field="carryForward"]');
         const name = nameInput.value.trim();
         const eligibleText = eligibleInput.value.trim();
         const applicantsText = applicantsInput.value.trim();
+        const carryForwardText = carryForwardInput.value.trim();
         const eligible = Number(eligibleText);
         const applicants = Number(applicantsText);
+        const carryForward = Number(carryForwardText);
 
         if (!name) {
           setFieldError(nameInput, "Enter a name.");
@@ -1347,7 +1586,13 @@
           firstInvalid = firstInvalid || applicantsInput;
         }
 
-        return { name: name, eligible: eligible, applicants: applicants };
+        if (carryForwardText === "" || !Number.isFinite(carryForward) || carryForward < 0 || carryForward >= 1) {
+          setFieldError(carryForwardInput, "Enter a fraction from 0 up to 1.");
+          errors.push((name || "College " + (index + 1)) + ": carry forward must be at least 0 and less than 1.");
+          firstInvalid = firstInvalid || carryForwardInput;
+        }
+
+        return { name: name, eligible: eligible, applicants: applicants, carryForward: carryForward };
       });
 
       if (runningEligible > Math.floor((Number.MAX_SAFE_INTEGER - 99) / 12)) {
@@ -1396,6 +1641,45 @@
         '<tbody>' + body + '<tr class="total-row"><td>Total</td><td class="numeric">' + result.totalEligible.toLocaleString() + '</td><td class="numeric">' + result.totalApplicants.toLocaleString() + '</td><td class="numeric">' + result.allocatedSeats.toLocaleString() + '</td><td class="numeric">' + result.remainingApplicants.reduce(function (a, b) { return a + b; }, 0).toLocaleString() + '</td><td></td></tr></tbody></table>';
     }
 
+    function renderCarryForwardReport(result) {
+      const body = result.colleges.map(function (college, index) {
+        const events = result.tieEvents.filter(function (event) { return event.index === index; });
+        let activity;
+        if (events.length === 0) {
+          activity = college.carryForward > 0
+            ? '<div>No cutoff tie this year; the prior value persists.</div>'
+            : '<div>No cutoff tie and no carry-forward balance.</div>';
+        } else {
+          activity = events.map(function (event) {
+            const fraction = formatCarryForward(event.fraction);
+            if (event.outcome === "won") {
+              return '<div><span class="tie-badge tie-won">Won tie</span>Round ' + event.round + ': won a ' + fraction + ' cutoff tie; carry forward cleared.</div>';
+            }
+            if (event.createdCarryForward) {
+              return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie with unmet demand; ' + fraction + ' recorded for next year.</div>';
+            }
+            if (event.carryForwardBefore > 0) {
+              return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie; prior carry forward persists.</div>';
+            }
+            if (event.applicantsAfter > 0 && event.nextCarryForwardAfter > 0) {
+              return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost another ' + fraction + ' cutoff tie; the balance established earlier this year remains.</div>';
+            }
+            return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie, but no demand remained after the floor award; no balance was created.</div>';
+          }).join("");
+        }
+        return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
+          '<td class="numeric carry-value">' + formatCarryForward(college.carryForward) + '</td>' +
+          '<td class="tie-activity">' + activity + '</td>' +
+          '<td class="numeric carry-value carry-value-next">' + formatCarryForward(result.nextCarryForwards[index]) + '</td></tr>';
+      }).join("");
+
+      const carryingCount = result.nextCarryForwards.filter(function (value) { return value > 0; }).length;
+      document.getElementById("carry-forward-summary").innerHTML = icons.check + " " +
+        (carryingCount === 0 ? "No balances for next year" : plural(carryingCount, "college") + " carrying forward");
+      document.getElementById("carry-forward-table").innerHTML =
+        '<table class="result-table"><thead><tr><th scope="col">College</th><th class="numeric" scope="col">Entered this year</th><th scope="col">Tie activity this year</th><th class="numeric" scope="col">Next year</th></tr></thead><tbody>' + body + '</tbody></table>';
+    }
+
     function exactQuota(record, round, college) {
       if (round.pool === 0) {
         return '<span class="quota-work">0<small>No seats in pool</small></span>';
@@ -1428,12 +1712,17 @@
           const college = result.colleges[record.index];
           const rankText = record.rank === null ? "—" : "#" + record.rank;
           const bonusText = record.bonus ? '<span class="bonus">+1 remainder seat</span>' : "—";
+          let tieText = "—";
+          if (record.tieOutcome === "won") tieText = '<span class="tie-badge tie-won">Won cutoff tie</span>';
+          if (record.tieOutcome === "lost") tieText = '<span class="tie-badge tie-lost">Lost cutoff tie</span>';
           return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
             '<td class="numeric">' + college.eligible.toLocaleString() + '</td>' +
             '<td>' + exactQuota(record, round, college) + '</td>' +
             '<td class="numeric">' + record.base.toLocaleString() + '</td>' +
             '<td class="numeric">' + fractionalPart(record, round) + '</td>' +
+            '<td class="numeric carry-value">' + formatCarryForward(record.currentCarryForward) + '</td>' +
             '<td class="numeric rank">' + rankText + '</td>' +
+            '<td>' + tieText + '</td>' +
             '<td>' + bonusText + '</td>' +
             '<td class="numeric"><strong>' + record.offered.toLocaleString() + '</strong></td>' +
             '<td class="numeric">' + record.applicantsBefore.toLocaleString() + '</td>' +
@@ -1455,7 +1744,7 @@
             '<div class="round-stat"><span>Sum of quota floors</span><strong>' + round.baseTotal.toLocaleString() + '</strong></div>' +
             '<div class="round-stat"><span>Remainder seats</span><strong>' + round.remainderSeats.toLocaleString() + '</strong></div>' +
           '</div><div class="audit-wrap"><table class="audit-table"><thead><tr>' +
-            '<th scope="col">College</th><th class="numeric" scope="col">Eligible</th><th scope="col">Exact quota arithmetic</th><th class="numeric" scope="col">Floor</th><th class="numeric" scope="col">Fraction</th><th class="numeric" scope="col">Tie order</th><th scope="col">Remainder award</th><th class="numeric" scope="col">Hamilton offer</th><th class="numeric" scope="col">Applicants before</th><th class="numeric" scope="col">Funded</th><th class="numeric" scope="col">Returned</th><th class="numeric" scope="col">Unfunded after</th>' +
+            '<th scope="col">College</th><th class="numeric" scope="col">Eligible</th><th scope="col">Exact quota arithmetic</th><th class="numeric" scope="col">Floor</th><th class="numeric" scope="col">Fraction</th><th class="numeric" scope="col">Carry forward</th><th class="numeric" scope="col">Priority rank</th><th scope="col">Cutoff tie</th><th scope="col">Remainder award</th><th class="numeric" scope="col">Hamilton offer</th><th class="numeric" scope="col">Applicants before</th><th class="numeric" scope="col">Funded</th><th class="numeric" scope="col">Returned</th><th class="numeric" scope="col">Unfunded after</th>' +
           '</tr></thead><tbody>' + recordRows + '</tbody></table></div>' +
           '<p class="round-note"><strong>Round check:</strong> floors (' + round.baseTotal.toLocaleString() + ') + remainder seats (' + round.remainderSeats.toLocaleString() + ') = pool (' + round.pool.toLocaleString() + '). Funded (' + round.funded.toLocaleString() + ') + returned (' + round.returned.toLocaleString() + ') = pool (' + round.pool.toLocaleString() + '). ' + escapeHtml(roundNarrative(round, result)) + '</p></div></details>';
       }).join("");
@@ -1483,6 +1772,7 @@
         '<div class="formula-step"><span>Exact then rounded up</span><strong>' + formatDecimal(percentExact, 2) + ' → ' + result.availableSeats.toLocaleString() + ' seats</strong></div>';
 
       renderFinalTable(result);
+      renderCarryForwardReport(result);
       renderRounds(result);
 
       document.getElementById("allocation-check").innerHTML = icons.check + " " + result.allocatedSeats.toLocaleString() + " awarded + " + result.unallocatedSeats.toLocaleString() + " unallocated = " + result.availableSeats.toLocaleString() + " available";
@@ -1562,6 +1852,16 @@
       renderRows(defaultColleges.length, defaultColleges);
       clearErrors();
       markStale();
+    });
+
+    document.getElementById("load-test-data").addEventListener("click", function () {
+      renderRows(testDataset.length, testDataset);
+      clearErrors();
+      markStale();
+    });
+
+    document.getElementById("method-link").addEventListener("click", function () {
+      document.getElementById("calculation-method").open = true;
     });
 
     form.addEventListener("submit", calculate);

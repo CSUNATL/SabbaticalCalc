@@ -1,6 +1,6 @@
 # Sabbatical Seat Allocation
 
-`index.html` is a complete, offline sabbatical-allocation calculator. It implements the institutional rules in `BRIEF.md`, reports invalid inputs beside the affected fields, shows final results, and exposes every Hamilton quota and capacity adjustment in a round-by-round audit trail.
+`index.html` is a complete, offline sabbatical-allocation calculator. It implements the institutional rules in `BRIEF.md`, reports invalid inputs beside the affected fields, shows final results, and exposes every Hamilton quota and capacity adjustment in a round-by-round audit trail. A prominent **How the allocation is calculated** link opens a plain-language, seven-step description of the full process inside the page.
 
 ## Launch
 
@@ -25,9 +25,12 @@ Available seats are **12% of total eligible faculty, with any fractional result 
 
 Hamilton fractional-remainder ties are resolved deterministically by:
 
-1. more eligible faculty;
-2. college name A–Z, case-insensitive; then
-3. original entry order.
+1. larger current carry-forward fraction;
+2. more eligible faculty;
+3. college name A–Z, case-insensitive; then
+4. original entry order.
+
+Each college has a current carry-forward input from 0 up to, but not including, 1. A prior value persists when the college does not win a cutoff tie. It is consumed and reset to zero when the college wins such a tie. A college that loses a cutoff tie, still has unmet demand after its floor allocation, and has no existing balance receives the tied fractional remainder as its next-year carry-forward. An existing nonzero balance is preserved rather than replaced or accumulated. The results include a separate report stating the exact value to enter for every college in the next allocation cycle.
 
 The rule is displayed in the interface and applied in every round. Names must be non-empty and unique (case-insensitive), so audit reports remain unambiguous.
 
@@ -43,7 +46,7 @@ node tests/allocation.test.cjs
 
 The test runner extracts and executes the same `allocation-core` code embedded in `index.html`, so the artifact and tests cannot silently use different implementations. No packages or build step are required.
 
-For a quick manual check, open `index.html`, enter eligible-faculty and applicant counts for the prepopulated colleges, and select **Calculate allocation**. **Reset college list** restores the original ten-college roster with zero counts. Resize the window to verify the mobile layout; use **Print report** to preview the printable audit report.
+For a quick manual check, open `index.html`, select **Load test dataset**, and then select **Calculate allocation**. The embedded test dataset totals 382 eligible faculty and 100 applicants, producing 46 available seats under the upward-rounding rule. **Reset college list** restores the original ten-college roster with zero counts. Resize the window to verify the mobile layout; use **Print report** to preview the printable audit report.
 
 ## Build
 

@@ -7,6 +7,10 @@ const vm = require("node:vm");
 
 const htmlPath = path.join(__dirname, "..", "index.html");
 const html = fs.readFileSync(htmlPath, "utf8");
+assert.match(html, /href="#calculation-method"/, "page links to the calculation description");
+assert.match(html, /id="calculation-method"/, "page contains the calculation description");
+assert.match(html, /Redistribute returned seats/, "description documents redistribution rounds");
+assert.match(html, /id="load-test-data"/, "page provides a test-dataset control");
 const scripts = Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g));
 assert.ok(scripts.length >= 2, "index.html contains core and interface scripts");
 scripts.forEach(function (script, index) {
@@ -67,6 +71,45 @@ test("resolves a complete tie by name and then entry order", function () {
   assert.equal(distribution.records[0].bonus, 0);
 });
 
+test("uses prior carry forward first and reports next-year balances", function () {
+  const result = core.allocate([
+    { name: "Alpha", eligible: 1, applicants: 1, carryForward: 0.2 },
+    { name: "Beta", eligible: 1, applicants: 1, carryForward: 0.6 },
+    { name: "Gamma", eligible: 1, applicants: 1, carryForward: 0 }
+  ]);
+  assert.equal(result.availableSeats, 1);
+  assert.deepEqual(Array.from(result.allocations), [0, 1, 0]);
+  assert.deepEqual(Array.from(result.nextCarryForwards), [0.2, 0, 1 / 3]);
+  assert.equal(result.tieEvents.length, 3);
+  assert.equal(result.tieEvents.find(function (event) { return event.index === 1; }).outcome, "won");
+  assert.equal(result.tieEvents.find(function (event) { return event.index === 2; }).createdCarryForward, true);
+});
+
+test("preserves carry forward until a college wins a cutoff tie", function () {
+  const result = core.allocate([
+    { name: "Alpha", eligible: 10, applicants: 10, carryForward: 0.375 },
+    { name: "Beta", eligible: 90, applicants: 90, carryForward: 0 }
+  ]);
+  assert.equal(result.tieEvents.length, 0);
+  assert.deepEqual(Array.from(result.nextCarryForwards), [0.375, 0]);
+});
+
+test("creates carry forward only when a tied loss leaves unmet demand", function () {
+  const result = core.allocate([
+    { name: "Alpha", eligible: 1, applicants: 1, carryForward: 0 },
+    { name: "Beta", eligible: 1, applicants: 1, carryForward: 0 },
+    { name: "Gamma", eligible: 1, applicants: 0, carryForward: 0 }
+  ]);
+  assert.deepEqual(Array.from(result.allocations), [1, 0, 0]);
+  assert.deepEqual(Array.from(result.nextCarryForwards), [0, 1 / 3, 0]);
+});
+
+test("rejects carry-forward values outside the fractional range", function () {
+  assert.throws(function () {
+    core.allocate([{ name: "A", eligible: 2, applicants: 1, carryForward: 1 }]);
+  }, /invalid carry-forward fraction/);
+});
+
 test("includes zero-applicant colleges in round one and redistributes returned seats", function () {
   const result = core.allocate([
     { name: "No demand", eligible: 50, applicants: 0 },
@@ -119,6 +162,26 @@ test("rejects applicants greater than eligible faculty", function () {
   }, /more applicants than eligible/);
 });
 
+test("calculates the embedded committee test dataset", function () {
+  const result = core.allocate([
+    { name: "CECS", eligible: 33, applicants: 6 },
+    { name: "CHHD", eligible: 64, applicants: 12 },
+    { name: "COH", eligible: 39, applicants: 13 },
+    { name: "COUNSELING", eligible: 9, applicants: 0 },
+    { name: "CSBS", eligible: 75, applicants: 21 },
+    { name: "CSM", eligible: 45, applicants: 16 },
+    { name: "DNCBE", eligible: 38, applicants: 13 },
+    { name: "LIBRARY", eligible: 18, applicants: 2 },
+    { name: "MCCAMC", eligible: 39, applicants: 10 },
+    { name: "MDECOE", eligible: 22, applicants: 7 }
+  ]);
+  assert.equal(result.totalEligible, 382);
+  assert.equal(result.totalApplicants, 100);
+  assert.equal(result.availableSeats, 46);
+  assert.deepEqual(Array.from(result.allocations), [4, 8, 5, 0, 10, 5, 4, 2, 5, 3]);
+  assert.equal(result.rounds.length, 2);
+});
+
 test("preserves allocation invariants across varied inputs", function () {
   let seed = 73129;
   function random(max) {
@@ -134,7 +197,8 @@ test("preserves allocation invariants across varied inputs", function () {
       colleges.push({
         name: "College " + index,
         eligible: eligible,
-        applicants: random(eligible + 1)
+        applicants: random(eligible + 1),
+        carryForward: random(4) === 0 ? random(1000) / 1000 : 0
       });
     }
 
@@ -144,6 +208,7 @@ test("preserves allocation invariants across varied inputs", function () {
     result.allocations.forEach(function (allocation, index) {
       assert.ok(Number.isInteger(allocation) && allocation >= 0);
       assert.ok(allocation <= colleges[index].applicants);
+      assert.ok(result.nextCarryForwards[index] >= 0 && result.nextCarryForwards[index] < 1);
     });
     assert.equal(result.rounds[0].participantIndexes.length, count);
     result.rounds.forEach(function (round, index) {

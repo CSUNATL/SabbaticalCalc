@@ -32,12 +32,13 @@ One `<script>` with two parts.
 Pure functions, no DOM.
 
 - `computeSeatPool(colleges, percent, rounding) -> { totalEligible, percent, exact, seats, rounding }`
-- `hamilton(parts, seats) -> { total, wholeSum, remainderSeats, rows, order, ties }`
-  - `parts`: `[{ idx, name, eligible }]` for the colleges taking part.
-  - For each part: `num = seats × eligible`, `whole = floor(num / total)`, `remNum = num − whole × total` (the fractional part's numerator, an exact integer). `order` is rows sorted by `remNum` desc, `eligible` desc, `name` asc; the first `remainderSeats` entries get `remainderSeat = 1` and `allocated = whole + 1`. `rank` is the position in `order`.
-  - `ties`: names of rows whose `remNum` equals the cutoff row's when the tie straddles the cutoff (i.e., the tie changed who got a seat). Empty otherwise.
+- `hamilton(parts, seats) -> { total, wholeSum, remainderSeats, rows, order, ties, tieDecidedBy }`
+  - `parts`: `[{ idx, name, eligible, carry }]` for the colleges taking part; `carry` is the carry forward used for tie-breaks.
+  - For each part: `num = seats × eligible`, `whole = floor(num / total)`, `remNum = num − whole × total` (the fractional part's numerator, an exact integer). `order` is rows sorted by `remNum` desc, `carryKey(carry)` desc (thousandths), `eligible` desc, `name` asc (English collation); the first `remainderSeats` entries get `remainderSeat = 1` and `allocated = whole + 1`. `rank` is the position in `order`.
+  - `ties`: names of rows whose `remNum` equals the cutoff row's when the tie straddles the cutoff (i.e., the tie changed who got a seat). Empty otherwise. Those rows get `tie = 'won' | 'lost'`, and `tieDecidedBy` is `'carry' | 'eligible' | 'name'`: the first rule that separated the last winner from the first loser.
 - `allocate(colleges, seats) -> { seats, rounds, final, unallocated, stopReason, totalAwarded }`
-  - Maintains `demand[i]` (unfunded applicants), `awarded[i]`, `byRound[i]`, `settledIn[i]`.
+  - Maintains `demand[i]` (unfunded applicants), `awarded[i]`, `byRound[i]`, `settledIn[i]`, `carryNow[i]` (carry forward used for tie-breaks; cleared when the college wins a tie), and `tieEvents[i]`.
+  - After the loop, each `final[i]` gets `carry` (entered), `tieEvents` (`{ round, result, fraction, decidedBy, counted, carryAfter }`), and `carryNext`: events applied in order, won → 0, lost with `demand[i] > 0` at year end → previous + fraction rounded to 3 decimals, lost otherwise → unchanged.
   - Loop: stop if `pool === 0`. Participants are all colleges in round 1, else those with `demand > 0`; stop with `unallocated = pool` if none. Guard: stop if `round > n + 1` (unreachable by construction; see Termination). Run `hamilton`, then per row: `funded = min(allocated, demand)`, `surplus = allocated − funded`, update demand/awarded, mark settled. `pool = Σ surplus`.
   - Each round record keeps the full `hamilton` rows augmented with `demandBefore`, `funded`, `surplus`, `demandAfter`, `settled`, so the UI can render everything without recomputation.
 - `validate(colleges, percent) -> string[]` of user-facing error messages; empty means valid.
@@ -51,19 +52,20 @@ Termination argument: from round 2 on, every participant has `demand > 0`. A rou
 - `recalc()`: trims names, updates input totals, runs `validate`. On errors: show the list, clear results. Otherwise: `computeSeatPool`, `allocate`, store `lastResult`, render the seat-rule sentence, and set `#results.innerHTML = renderResults(...)`.
 - `renderResults()` builds, in order: seat flow boxes, notes (unallocated / unfunded), final allocation table, round-by-round sections (`roundNarrative` + `roundTable` per round), and the step-by-step record inside a `<details>`. All are template strings; user-supplied names pass through `esc()`.
 - Save: serialize `state` (plus `format`/`version` fields) to a Blob download. Load: `FileReader` → JSON → coerce fields defensively → `renderInputs()`. CSV: built from `lastResult`, quoted fields, CRLF.
-- Print: `window.print()`. CSS `@media print` hides `.noprint`, forces `<details>` content visible, page-breaks before each `h2`, and preserves the highlight colors.
+- Print: `window.print()`. A `beforeprint` handler opens every `<details>` and `afterprint` restores their previous state, since CSS cannot reveal the content of a closed `<details>`. CSS `@media print` hides `.noprint`, page-breaks before each `h2`, and preserves the highlight colors.
+- Method description: `<details id="method">` at the end of the page, a numbered procedure plus the reasoning for the two non-obvious rules. Links with class `methodlink` (one in the header, one in the round-by-round intro) set `open` on it via a delegated click handler before the anchor scrolls.
 
 ### Data formats
 
 Saved inputs (`sabbatical-inputs.json`):
 
 ```json
-{ "format": "sabbatical-allocation-inputs", "version": 1,
+{ "format": "sabbatical-allocation-inputs", "version": 2,
   "percent": 12, "rounding": "down",
-  "colleges": [ { "name": "Engineering", "eligible": 120, "applicants": 6 } ] }
+  "colleges": [ { "name": "Engineering", "eligible": 120, "applicants": 6, "carry": 0 } ] }
 ```
 
-Loader accepts any file with a `colleges` array; missing `percent`/`rounding` fall back to defaults. Bump `version` if the shape changes and keep the loader backward compatible.
+Loader accepts any file with a `colleges` array; missing `percent`/`rounding` fall back to defaults and a missing `carry` (version-1 files) is 0. Bump `version` if the shape changes and keep the loader backward compatible. The "Save next year's starting inputs" button writes the same format with `carry` set to each college's `carryNext` and counts at 0.
 
 ## Design system
 
@@ -80,6 +82,6 @@ The UI has no automated tests. `tools/screenshot.py` renders the built file head
 
 ## Extension points
 
-- New allocation rule (e.g., prior-year deficit tie-break): change only `hamilton`'s sort comparator, add a test, update REQUIREMENTS R4.2 and the method text in `app.html`.
+- New tie-break rule: change only `hamilton`'s sort comparator and `tieDecidedBy`, add a test, update REQUIREMENTS R4.2 and the method text. The carry-forward year-end rule lives in `allocate`'s `final` mapping.
 - Carry-over between years: add fields to `state`/JSON (`version: 2`), pass them into `allocate`, and add a column to the final table. Keep `allocate` pure.
 - Institution branding / sign-off block for print: markup and CSS only, no logic change.

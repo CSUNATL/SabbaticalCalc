@@ -20,7 +20,7 @@ Node 20+ only. No `npm install` is needed; there are no dependencies. Do not add
 - The deliverable stays one `.html` file with no network requests, no external scripts, fonts, or stylesheets. It must work from `file://` with the browser offline.
 - `src/logic.js` is pure: no DOM, no globals other than its function definitions, and it must keep working under Node (`module.exports` guard at the bottom). All allocation arithmetic lives there and nowhere else.
 - Apportionment comparisons use integer arithmetic (`seats * eligible` mod `total`), never rounded decimals. Do not "simplify" this to floating point.
-- The allocation rules in REQUIREMENTS.md sections 3 and 4 are policy, not implementation detail. Do not change round-1 participation, the exclusion of settled colleges from later rounds, or the tie-break order without an explicit request.
+- The allocation rules in REQUIREMENTS.md sections 3 and 4 are policy, not implementation detail. Do not change round-1 participation, the exclusion of settled colleges from later rounds, the tie-break order (carry forward, then headcount, then name), or the carry-forward year-end rule without an explicit request.
 - Never commit a `dist/` file that was not produced by `npm run build` from the current `src/`.
 
 ## Workflow
@@ -37,7 +37,7 @@ Node 20+ only. No `npm install` is needed; there are no dependencies. Do not add
 - All user-facing text is plain sentence-case English written for a faculty committee, not for developers. Say "seat", "college", "applicant", "settled", "returned to the pool". Never expose internal names like `remNum` or `demandBefore` in the UI.
 - Escape anything derived from user input with `esc()` before inserting into HTML.
 - Numbers in tables use tabular figures; quotas and fractions show 3 decimals; shares show 1 decimal percent.
-- Keep the print stylesheet working: `.noprint` on controls, `<details>` expanded in print.
+- Keep printing working: `.noprint` on controls, and the `beforeprint`/`afterprint` handlers that open every `<details>` for printing and restore it afterwards (CSS alone cannot open a closed `<details>`).
 
 ## What not to do
 
