@@ -60,6 +60,6 @@ Status key: **[done]** implemented in v1.0; **[open]** not yet decided or built.
 
 - R7.1 **[open]** Confirm the seat-pool rounding rule against the governing policy text. The default was changed from round down to round up on September 15, 2026 at the owner's request.
 - R7.2 **[open]** Three tie rules are offered (R4.2). Still to confirm against the policy text which should be the default, and whether an unresolved tie under the eligible-faculty rule should be placed provisionally by list order (the current behavior) or withheld.
-- R7.3 **[open]** Whether multi-year carry-over of unallocated seats or of unfunded applicants is in scope. Not built; the JSON format has room for it.
+- R7.3 **[open]** Whether multi-year carry-over of unallocated seats or of unfunded applicants is in scope. Not built; it would be another column in the inputs CSV.
 - R7.4 **[open]** Whether a college should be able to cap its own participation (e.g., a college declining seats) separately from applicant count. Not built.
 - R7.5 **[open]** Whether the deliverable should carry institution name, academic year, and a committee sign-off block in the printed output.

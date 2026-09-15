@@ -136,10 +136,9 @@ Node was not installed on Jeff's machine; Node 24 LTS was installed with `winget
 
 The root README now describes the worksheet for users and the layout and commands for developers. The stub `index.html` was deleted; there is no GitHub Pages copy.
 
-### State at end of session 3
+### State after the reconstruction
 
-- Every check passes: 31 tests, build byte-identical, headless render clean. Not committed at the time of writing; Jeff had not asked for a commit.
-- Still open: R7.1 through R7.5; whether the main file and Codex's should agree on the carry-forward cap (the main file lets values exceed 1, Codex's caps below 1).
+At this point every check passed (31 tests) and nothing was yet committed. The rest of the session, below, continued from here; the closing state is at the end of this file.
 
 ### Reorderable list and two tie rules (same session)
 
@@ -174,3 +173,18 @@ Jeff asked how a person would know the format for "Load inputs from file"; nothi
 Jeff's correction: committees will never have a JSON file; the load control must take a CSV spreadsheet with college names, eligible faculty, applicants, and carry forward. The seat percentage, rounding rule, and tie rule are not in the file. The colleges keep the file's order, and loading returns the tie rule to its default (carry forward, then eligible faculty).
 
 Built: `parseInputsCsv` and `formatInputsCsv` in `src/logic.js` (pure, tested: header in any order, no header, semicolons, tabs, quotes, byte-order mark, CRLF, blank rows, a "Total" row, thousands separators, blank cells, error messages, round trip). Both save buttons now write CSV. The "Files" section and the load error were rewritten for CSV. Files that this page saved as JSON earlier in the day still load, detected by a leading brace, so nothing written today is orphaned. Decisions made without instruction: a blank applicants or carry-forward cell is 0 while a blank eligible-faculty cell is an error; a row named "Total" is skipped because spreadsheets often have one; a headerless file is accepted with positional columns. The JSON "Files" section from earlier in the session lasted one commit.
+
+### State at end of session 3
+
+- Everything is committed and pushed to `main` (last commit: inputs file changed to CSV). Working tree clean.
+- `npm run check`: 41 tests passing; `dist/sabbatical-allocation.html` is the fresh build. `python tools/screenshot.py` passes: no script errors, no table wider than 1280px, test data gives 46 seats in two rounds, reordering switches and keeps the tie rule as specified, a non-CSV file is refused with an explanation, an Excel-style CSV and a headerless CSV load.
+- Environment on Jeff's machine: Node 24 LTS installed per-user with winget on this date (see the memory note if `node` is not on PATH: call `npm.cmd`); Playwright and Chromium installed with pip.
+- Behavior now differs from Codex's version in `codex/` in more ways than the carry-forward cap: three tie rules, no name rule, the unresolved flag, a reorderable list, CSV inputs. `codex/` is kept for comparison only and was not updated.
+- Still open: R7.1 through R7.5 (policy confirmations; R7.2 now also asks whether an unresolved tie should be placed provisionally or withheld); whether to keep JSON loading for the files written earlier this day, or drop it after the committee has none left.
+
+### Suggested next steps
+
+1. Have the committee try the CSV round trip with a real spreadsheet (Excel and Google Sheets export) and confirm the heading words are recognised; add any heading variants to `CSV_HEADINGS` in `src/logic.js` with a test.
+2. Confirm R7.1 and R7.2 against the policy text and set the defaults accordingly (percent, rounding, tie rule).
+3. Decide R7.5 (institution name, academic year, sign-off block in print); markup and CSS only.
+4. Decide whether `codex/` should stay in the repository now that the two implementations have diverged.
