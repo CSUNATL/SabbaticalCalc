@@ -1,16 +1,16 @@
 # Sabbatical Seat Allocation
 
-`index.html` is a complete, offline sabbatical-allocation calculator. It implements the institutional rules in `BRIEF.md`, reports invalid inputs beside the affected fields, shows final results, and exposes every Hamilton quota and capacity adjustment in a round-by-round audit trail. A prominent **How the allocation is calculated** link opens a plain-language, seven-step description of the full process inside the page.
+`sabbaticalapp.html` is a complete, offline sabbatical-allocation calculator. It implements the institutional rules in `BRIEF.md`, reports invalid inputs beside the affected fields, shows final results, and exposes every Hamilton quota and capacity adjustment in a round-by-round audit trail. A prominent **How the allocation is calculated** link opens a plain-language, seven-step description of the full process inside the page.
 
 ## Launch
 
-Double-click `index.html`, or open it from any current desktop browser. The file has no dependencies, does not need a web server, and makes no network requests. It can be copied or emailed as the single end-user deliverable.
+Double-click `sabbaticalapp.html`, or open it from any current desktop browser. The file has no dependencies, does not need a web server, and makes no network requests. It can be copied or emailed as the single end-user deliverable.
 
 ## Technology and structure
 
 The application is one self-contained HTML file using standards-based HTML, CSS, and JavaScript. This was chosen because committee members on Windows and macOS can run it without installation, administrator rights, or an internet connection. Keeping the styling and code inside the artifact also prevents missing-file problems when it is shared.
 
-Within `index.html`:
+Within `sabbaticalapp.html`:
 
 - Semantic HTML provides the input form, accessible validation, results, and expandable audit rounds.
 - CSS provides responsive screen and print layouts without fonts or assets from the internet.
@@ -44,10 +44,10 @@ Automated tests require Node.js only for development; end users do not need it:
 node tests/allocation.test.cjs
 ```
 
-The test runner extracts and executes the same `allocation-core` code embedded in `index.html`, so the artifact and tests cannot silently use different implementations. No packages or build step are required.
+The test runner extracts and executes the same `allocation-core` code embedded in `sabbaticalapp.html`, so the artifact and tests cannot silently use different implementations. No packages or build step are required.
 
-For a quick manual check, open `index.html`, select **Load test dataset**, and then select **Calculate allocation**. The embedded test dataset totals 382 eligible faculty and 100 applicants, producing 46 available seats under the upward-rounding rule. **Reset college list** restores the original ten-college roster with zero counts. Resize the window to verify the mobile layout; use **Print report** to preview the printable audit report.
+For a quick manual check, open `sabbaticalapp.html`, select **Load test dataset**, and then select **Calculate allocation**. The embedded test dataset totals 382 eligible faculty and 100 applicants, producing 46 available seats under the upward-rounding rule. **Reset college list** restores the original ten-college roster with zero counts. Resize the window to verify the mobile layout; use **Print report** to preview the printable audit report.
 
 ## Build
 
-There is no build step. Edit `index.html` directly and rerun the tests. The checked-in HTML is both source and launchable artifact.
+There is no build step. Edit `sabbaticalapp.html` directly and rerun the tests. The checked-in HTML is both source and launchable artifact.

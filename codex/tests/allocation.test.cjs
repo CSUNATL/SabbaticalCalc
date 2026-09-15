@@ -5,19 +5,19 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
-const htmlPath = path.join(__dirname, "..", "index.html");
+const htmlPath = path.join(__dirname, "..", "sabbaticalapp.html");
 const html = fs.readFileSync(htmlPath, "utf8");
 assert.match(html, /href="#calculation-method"/, "page links to the calculation description");
 assert.match(html, /id="calculation-method"/, "page contains the calculation description");
 assert.match(html, /Redistribute returned seats/, "description documents redistribution rounds");
 assert.match(html, /id="load-test-data"/, "page provides a test-dataset control");
 const scripts = Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g));
-assert.ok(scripts.length >= 2, "index.html contains core and interface scripts");
+assert.ok(scripts.length >= 2, "sabbaticalapp.html contains core and interface scripts");
 scripts.forEach(function (script, index) {
   assert.doesNotThrow(function () { new vm.Script(script[1]); }, "inline script " + (index + 1) + " parses");
 });
 const match = html.match(/<script id="allocation-core">([\s\S]*?)<\/script>/);
-assert.ok(match, "index.html contains the allocation-core script");
+assert.ok(match, "sabbaticalapp.html contains the allocation-core script");
 
 const context = { window: {} };
 vm.createContext(context);
