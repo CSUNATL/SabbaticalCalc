@@ -168,3 +168,9 @@ The hidden 1px file input received keyboard focus, so the focus ring was invisib
 ### Documenting the inputs file (same session)
 
 Jeff asked how a person would know the format for "Load inputs from file"; nothing on the page said. Added a "Files" section to the method description with an example file and the list of required and optional fields, a link to it beside the toolbar, and a load error that names the reason (not JSON, no colleges list, and so on) and points to the section. The loader itself is unchanged apart from clearer checks; a file with only `colleges` and each entry's name, eligible, and applicants loads, which the screenshot tool now exercises. A CSV import was discussed and not built.
+
+### Inputs file changed from JSON to CSV (same session)
+
+Jeff's correction: committees will never have a JSON file; the load control must take a CSV spreadsheet with college names, eligible faculty, applicants, and carry forward. The seat percentage, rounding rule, and tie rule are not in the file. The colleges keep the file's order, and loading returns the tie rule to its default (carry forward, then eligible faculty).
+
+Built: `parseInputsCsv` and `formatInputsCsv` in `src/logic.js` (pure, tested: header in any order, no header, semicolons, tabs, quotes, byte-order mark, CRLF, blank rows, a "Total" row, thousands separators, blank cells, error messages, round trip). Both save buttons now write CSV. The "Files" section and the load error were rewritten for CSV. Files that this page saved as JSON earlier in the day still load, detected by a leading brace, so nothing written today is orphaned. Decisions made without instruction: a blank applicants or carry-forward cell is 0 while a blank eligible-faculty cell is an error; a row named "Total" is skipped because spreadsheets often have one; a headerless file is accepted with positional columns. The JSON "Files" section from earlier in the session lasted one commit.

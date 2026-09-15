@@ -41,6 +41,6 @@ Node 20+ only. No `npm install` is needed; there are no dependencies. Do not add
 
 ## What not to do
 
-- Do not add localStorage or any persistence beyond the explicit save/load JSON file. The user chose file-based persistence deliberately.
+- Do not add localStorage or any persistence beyond the explicit save/load CSV file. The user chose file-based persistence deliberately.
 - Do not add a dark mode, animations, icons, or a CSS framework.
 - Do not replace the narrative paragraphs with terser output. The verbosity is a requirement: committees must be able to verify every step.

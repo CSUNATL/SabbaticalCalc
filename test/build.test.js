@@ -44,6 +44,8 @@ test('page has the pieces the UI relies on', () => {
   assert.match(dist, /id="percent"[^>]*step="0\.0001"/);
   assert.match(dist, /id="tieMethod"/);
   assert.match(dist, /id="method-files"/);
+  assert.match(dist, /sabbatical-inputs\.csv/);
+  assert.doesNotMatch(dist, /sabbatical-inputs\.json/);
   assert.match(dist, /href="#method-files" class="methodlink"/);
   assert.match(dist, /addEventListener\('dragstart'/);
   assert.match(dist, /data-mv="-1"/);

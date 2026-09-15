@@ -75,23 +75,33 @@ def main() -> int:
         rule = page.locator("#ruleOut").inner_text()
         assert "375 eligible faculty × 18.4% = 69, rounded up to 69 seats" in rule, rule
 
-        # Loading files: a file that is not JSON gives a message that says what is expected; a minimal
-        # hand-written file with only the required fields loads.
-        import tempfile, json
+        # Loading files: a file that is not a spreadsheet gives a message that says what is expected;
+        # a CSV with a header row loads in file order and resets the tie rule; a headerless CSV loads too.
+        import tempfile
         tmp = tempfile.mkdtemp()
         bad = os.path.join(tmp, "notes.txt")
         with open(bad, "w", encoding="utf-8") as fh:
             fh.write("this is not a saved inputs file")
         page.set_input_files("#fileLoad", bad)
+        page.wait_for_function("document.getElementById('errors').textContent.includes('could not be loaded')")   # FileReader is asynchronous
         msg = page.locator("#errors").inner_text()
-        assert "could not be loaded: it is not in JSON format" in msg and '"colleges" list' in msg, msg
-        minimal = os.path.join(tmp, "minimal.json")
-        with open(minimal, "w", encoding="utf-8") as fh:
-            json.dump({"colleges": [{"name": "A", "eligible": 100, "applicants": 3}, {"name": "B", "eligible": 50, "applicants": 2}]}, fh)
-        page.set_input_files("#fileLoad", minimal)
-        assert page.locator("#inputRows tr").count() == 2
+        assert "could not be loaded: rows need at least three columns" in msg and "saved as CSV" in msg, msg
+        page.select_option("#tieMethod", "list")
+        csv = os.path.join(tmp, "inputs.csv")
+        with open(csv, "w", encoding="utf-8-sig", newline="") as fh:              # as Excel writes it: BOM and CRLF
+            fh.write("College,Eligible faculty,Applicants,Carry forward\r\nZeta,100,3,0\r\n\"Arts, Media\",50,2,0.5\r\n")
+        page.set_input_files("#fileLoad", csv)
+        page.wait_for_function("document.querySelectorAll('#inputRows tr').length === 2")
+        assert page.locator("#inputRows tr:nth-child(1) input[data-k=name]").input_value() == "Zeta"
+        assert page.locator("#inputRows tr:nth-child(2) input[data-k=name]").input_value() == "Arts, Media"
+        assert page.locator("#inputRows tr:nth-child(2) input[data-k=carry]").input_value() == "0.5"
         assert "150 eligible faculty" in page.locator("#ruleOut").inner_text()
-        assert page.locator("#tieMethod").input_value() == "eligible"
+        assert page.locator("#tieMethod").input_value() == "eligible", "loading a file returns the tie rule to its default"
+        plain = os.path.join(tmp, "plain.csv")
+        with open(plain, "w", encoding="utf-8") as fh:
+            fh.write("A,10,1\nB,20,2\n")
+        page.set_input_files("#fileLoad", plain)
+        page.wait_for_function("document.getElementById('ruleOut').textContent.includes('30 eligible faculty')")
         page.click("#btnTest")
 
         # One validation error: results withheld, message shown.

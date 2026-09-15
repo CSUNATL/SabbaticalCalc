@@ -8,8 +8,8 @@ Every number the page produces can be checked by hand from the inputs shown on i
 
 1. Download `dist/sabbatical-allocation.html` and double-click it. It opens in any current browser on Windows or macOS. Nothing is installed and nothing is sent anywhere; the page works with the computer offline.
 2. Enter each college's eligible faculty and applicants. The ten CSUN colleges are listed on open. Colleges can be added, removed, or renamed.
-3. Enter each college's carry forward from the previous year's report, if any.
-4. Results update as you type. Use the buttons at the top to save the inputs to a file, load them again later, download the results as CSV, or print.
+3. Enter each college's carry forward from the previous year's report, if any. Or load all of it at once from a spreadsheet saved as CSV with columns for college, eligible faculty, applicants, and carry forward; the page's "Files" section shows the shape.
+4. Results update as you type. Use the buttons at the top to save the inputs to a CSV file, load them again later, download the results as CSV, or print.
 
 The seat pool is a percentage of all eligible faculty (12% by default, rounded up by default). Both are adjustable on the page. "How is the allocation calculated?" at the top of the page opens a numbered description of the whole procedure and the reasoning behind its rules.
 

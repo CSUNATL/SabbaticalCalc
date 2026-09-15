@@ -2,7 +2,7 @@
 /* Tests for src/logic.js (node:test, no dependencies). Run with `npm test`. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { computeSeatPool, hamilton, allocate, validate, TIE_METHODS } = require('../src/logic.js');
+const { computeSeatPool, hamilton, allocate, validate, TIE_METHODS, parseInputsCsv, formatInputsCsv } = require('../src/logic.js');
 
 /* ---------- helpers ---------- */
 const col = (name, eligible, applicants, carry = 0) => ({ name, eligible, applicants, carry });
@@ -481,4 +481,71 @@ test('fuzz: allocation invariants hold for random inputs', () => {
       pool = rd.surplus;
     });
   }
+});
+
+/* ---------- inputs file: CSV (R3.5) ---------- */
+test('csv: header row with the standard columns, CRLF, and a byte-order mark', () => {
+  const text = '\uFEFFCollege,Eligible faculty,Applicants,Carry forward\r\nHumanities,39,13,0\r\nLibrary,18,2,0.333\r\n';
+  assert.deepEqual(parseInputsCsv(text), [col('Humanities', 39, 13, 0), col('Library', 18, 2, 0.333)]);
+});
+
+test('csv: columns in any order, extra columns ignored, headings matched by words', () => {
+  const text = 'Applicants,Notes,Carry forward from last year,Name of college,Eligible\n3,x,0.5,A,10\n0,,0,B,20\n';
+  assert.deepEqual(parseInputsCsv(text), [col('A', 10, 3, 0.5), col('B', 20, 0, 0)]);
+});
+
+test('csv: no header row takes the columns in order; carry forward optional', () => {
+  assert.deepEqual(parseInputsCsv('A,10,3\nB,20,0,0.25\n'), [col('A', 10, 3, 0), col('B', 20, 0, 0.25)]);
+  // A college whose name contains "College" in a headerless file is not mistaken for a header.
+  assert.deepEqual(parseInputsCsv('College of Science,10,3\nB,20,0\n'), [col('College of Science', 10, 3, 0), col('B', 20, 0, 0)]);
+});
+
+test('csv: header without a carry column gives carry forward 0', () => {
+  assert.deepEqual(parseInputsCsv('College,Eligible,Applicants\nA,10,3\n'), [col('A', 10, 3, 0)]);
+});
+
+test('csv: quoted names with commas and quotes, semicolons, tabs', () => {
+  assert.deepEqual(parseInputsCsv('College,Eligible,Applicants,Carry\n"Arts, Media, & Communication",39,10,0\n"The ""Library""",18,2,0\n'),
+    [col('Arts, Media, & Communication', 39, 10, 0), col('The "Library"', 18, 2, 0)]);
+  assert.deepEqual(parseInputsCsv('College;Eligible;Applicants;Carry\nA;10;3;0\nB;20;0;0\n'), [col('A', 10, 3, 0), col('B', 20, 0, 0)]);
+  assert.deepEqual(parseInputsCsv('College\tEligible\tApplicants\nA\t10\t3\n'), [col('A', 10, 3, 0)]);
+});
+
+test('csv: blank rows and a Total row are skipped; blank cells; thousands separators', () => {
+  const text = 'College,Eligible faculty,Applicants,Carry forward\n\nA,"1,234",,\n,,,\nB,20,5,\nTotal,1254,5,\n';
+  const got = parseInputsCsv(text);
+  assert.equal(got.length, 2);
+  assert.deepEqual(got[0], col('A', 1234, 0, 0));
+  assert.deepEqual(got[1], col('B', 20, 5, 0));
+  const blankEligible = parseInputsCsv('College,Eligible,Applicants\nA,,3\n')[0];
+  assert.ok(Number.isNaN(blankEligible.eligible));
+  assert.match(validate([blankEligible], 12)[0], /eligible faculty must be a whole number/);
+});
+
+test('csv: order of rows is kept and duplicates are left for validation', () => {
+  const got = parseInputsCsv('College,Eligible,Applicants\nZ,1,0\nA,2,0\nz,3,0\n');
+  assert.deepEqual(got.map(c => c.name), ['Z', 'A', 'z']);
+  assert.match(validate(got, 12)[0], /appears more than once/);
+});
+
+test('csv: unusable files throw a message that completes "could not be loaded: ..."', () => {
+  assert.throws(() => parseInputsCsv(''), /the file is empty/);
+  assert.throws(() => parseInputsCsv('\n\n'), /the file is empty/);
+  assert.throws(() => parseInputsCsv('this is not a saved inputs file'), /at least three columns/);
+  assert.throws(() => parseInputsCsv('College,Eligible\nA,10\n'), /no column for applicants/);
+  assert.throws(() => parseInputsCsv('College,Applicants\nA,10\n'), /no column for eligible faculty/);
+  assert.throws(() => parseInputsCsv('College,Eligible,Applicants\n'), /no college rows/);
+});
+
+test('csv: formatInputsCsv writes a header and quotes what needs quoting; round trip', () => {
+  const cs = [col('Arts, Media, & Communication', 39, 10, 0), col('The "Library"', 18, 2, 0.333), col('Plain', 5, NaN, 0)];
+  const text = formatInputsCsv(cs);
+  assert.equal(text.split('\r\n')[0], 'College,Eligible faculty,Applicants,Carry forward');
+  assert.equal(text.split('\r\n')[1], '"Arts, Media, & Communication",39,10,0');
+  assert.equal(text.split('\r\n')[2], '"The ""Library""",18,2,0.333');
+  assert.equal(text.split('\r\n')[3], 'Plain,5,,0');                      // NaN (still being typed) is written blank
+  const back = parseInputsCsv(text);
+  assert.deepEqual(back.slice(0, 2), cs.slice(0, 2));
+  assert.equal(back[2].applicants, 0);                                    // and a blank applicants cell reads as 0
+  assert.deepEqual(parseInputsCsv(formatInputsCsv(CSUN)), CSUN);
 });

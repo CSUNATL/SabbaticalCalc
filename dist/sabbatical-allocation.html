@@ -144,7 +144,7 @@
   .method ol { max-width: 78ch; padding-left: 24px; }
   .method li { margin: 10px 0; }
   .method h3 { font-size: 18px; margin-top: 24px; }
-  .method pre { background: var(--stripe); border: 1px solid var(--rule); padding: 10px 12px; font-size: 13px; line-height: 1.4; overflow-x: auto; }
+  .method pre { background: var(--stripe); border: 1px solid var(--rule); padding: 10px 12px; font-size: 13px; line-height: 1.4; overflow-x: auto; max-width: 78ch; }
   .method code { font-size: 13.5px; }
   .methodlink { font-weight: 600; }
   .hidden { display: none; }
@@ -177,11 +177,11 @@
       <button type="button" id="btnTest">Load test data</button>
       <button type="button" id="btnClear">Clear all colleges</button>
       <button type="button" id="btnSave">Save inputs to file</button>
-      <label class="filebtn">Load inputs from file<input type="file" id="fileLoad" accept=".json,application/json"></label>
+      <label class="filebtn">Load inputs from file<input type="file" id="fileLoad" accept=".csv,.txt,.tsv,text/csv,text/plain,.json"></label>
       <button type="button" id="btnCsv">Download results (CSV)</button>
       <button type="button" id="btnPrint">Print or save as PDF</button>
     </div>
-    <p class="hint noprint">Saved inputs are small text files that this page writes and reads back. <a href="#method-files" class="methodlink">What is in a saved inputs file?</a></p>
+    <p class="hint noprint">Inputs are loaded from a spreadsheet saved as CSV: one row per college with its name, eligible faculty, applicants, and carry forward. <a href="#method-files" class="methodlink">What should the file look like?</a></p>
   </header>
 
   <section>
@@ -241,20 +241,12 @@
     <h3>Why there is a carry forward</h3>
     <p>When two colleges have exactly the same fractional part, the rule that decides the seat has nothing to do with need. The carry forward records the fraction the losing college was denied, so that the next time it is in a tie the seat goes to it. It persists from year to year until the college wins a tie. It is used for nothing else: it does not change quotas, whole seats, or the ranking of fractional parts that are not tied. Within a year, a college that has won a tie is treated as having no carry forward in later rounds.</p>
     <h3 id="method-files">Files</h3>
-    <p>"Save inputs to file" writes a small text file in JSON format holding everything entered on this page: the seat percentage, the rounding rule, the tie rule, and the colleges in list order with their eligible faculty, applicants, and carry forward. "Load inputs from file" reads such a file back. "Save next year's starting inputs to file", in the carry-forward report, writes the same kind of file with next year's carry forwards filled in and the counts cleared. The results CSV is for spreadsheets and cannot be loaded.</p>
-    <p>A file can also be written by hand or produced from a spreadsheet, as long as it has this shape:</p>
-<pre>{
-  "format": "sabbatical-allocation-inputs",
-  "version": 3,
-  "percent": 12,
-  "rounding": "up",
-  "tieMethod": "eligible",
-  "colleges": [
-    { "name": "Humanities", "eligible": 39, "applicants": 13, "carry": 0 },
-    { "name": "Library",    "eligible": 18, "applicants": 2,  "carry": 0.333 }
-  ]
-}</pre>
-    <p>Only the <code>colleges</code> list is required, and within each entry only <code>name</code>, <code>eligible</code>, and <code>applicants</code>. A missing <code>carry</code> is taken as 0. A missing <code>percent</code>, <code>rounding</code> (<code>up</code>, <code>nearest</code>, or <code>down</code>), or <code>tieMethod</code> (<code>eligible</code>, <code>list</code>, or <code>list-only</code>) takes the default shown on the page. Names must be unique, counts must be whole numbers, and the order of the list is the order the page shows. Files written by earlier versions of this page load as well.</p>
+    <p>"Load inputs from file" reads a spreadsheet saved as CSV (comma-separated values; Excel's "CSV" or "CSV UTF-8" and Google Sheets' "Download as CSV" both work). One row per college, with a column each for the college name, eligible faculty, applicants, and carry forward. The first row is a header. Columns may be in any order, and extra columns are ignored, as long as the headings contain the words "college" or "name", "eligible", "applicants", and "carry". Without a header row the columns are taken in the order shown here. The carry-forward column may be left out; it is then 0 for every college. The colleges appear on the page in the order they have in the file, and the tie rule returns to its default (carry forward, then more eligible faculty).</p>
+<pre>College,Eligible faculty,Applicants,Carry forward
+Humanities,39,13,0
+Library,18,2,0.333</pre>
+    <p>Blank rows and a row named "Total" are skipped. A blank applicants or carry-forward cell counts as 0; a blank eligible-faculty cell is reported as an error. Names must be unique and counts must be whole numbers. A name that contains a comma must be in quotes, which a spreadsheet does for you. Semicolon-separated and tab-separated files also load.</p>
+    <p>"Save inputs to file" writes the same kind of file from what is entered on this page, so it can be kept, edited in a spreadsheet, and loaded again. "Save next year's starting inputs to file", in the carry-forward report, writes it with next year's carry forwards filled in and the counts cleared. The results CSV is a different file, for the record, and cannot be loaded. Inputs files that earlier versions of this page saved in JSON format still load.</p>
     <h3>What to check</h3>
     <p>The round tables show, for every college in every round, its exact quota, whole seats, fractional part, rank, extra seat, allocation, seats funded, and seats returned. The carry-forward report lists every tie, who won and lost it and by which rule, and the value each college carries into next year. The step-by-step record at the end of the results writes out every division and every seat movement in order, with a checksum for each round and for the whole allocation. The CSV download contains the same tables.</p>
   </details>
@@ -446,6 +438,88 @@ function validate(colleges, percent) {
   return errors;
 }
 
+/* ---------- Inputs file: a CSV spreadsheet ---------- */
+/* The inputs file is a spreadsheet saved as CSV with one row per college and columns for the college
+   name, eligible faculty, applicants and, optionally, carry forward. Nothing else is in the file: the
+   seat percentage, rounding rule and tie rule are set on the page.
+   parseInputsCsv(text) -> [{ name, eligible, applicants, carry }] in file order.
+     - The delimiter is whichever of comma, semicolon or tab is most frequent in the first line, so
+       files from Excel in any locale and tab-separated files both load. Quoted cells may contain the
+       delimiter and doubled quotes. A leading byte-order mark is ignored.
+     - The first row is a header if it names an eligible-faculty or applicants column; the columns are
+       then matched by their headings (college/name, eligib..., applic..., carry) in any order. Without
+       a header the columns are taken as: college, eligible faculty, applicants, carry forward.
+     - Blank rows and a row named "Total" are skipped. A blank applicants or carry-forward cell is 0;
+       a blank eligible-faculty cell is NaN so validate() reports it. Thousands separators are removed.
+     - Throws an Error whose message completes "The file could not be loaded: ..." when there is nothing
+       usable in the file.
+   formatInputsCsv(colleges) -> the same shape with a header row, CRLF line endings, for Excel. */
+const CSV_HEADINGS = { name: /college|name|unit|school|division/i, eligible: /eligib/i, applicants: /applic/i, carry: /carry/i };
+function csvRows(text) {
+  text = String(text || '').replace(/^\uFEFF/, '');
+  const firstLine = text.split(/\r?\n/).find(l => l.trim()) || '';
+  const delim = [',', ';', '\t'].map(d => [d, firstLine.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch !== '"') cell += ch;
+      else if (text[i + 1] === '"') { cell += '"'; i++; }
+      else quoted = false;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delim) { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.map(r => r.map(c => c.trim())).filter(r => r.some(c => c !== ''));
+}
+function parseInputsCsv(text) {
+  const rows = csvRows(text);
+  if (!rows.length) throw new Error('the file is empty');
+  const cellNum = (s, blank) => { const t = (s || '').replace(/[,\s]/g, ''); return t === '' ? blank : Number(t); };
+  let cols, first = 0;
+  const head = rows[0];
+  const found = {};
+  for (const k of ['eligible', 'applicants', 'carry', 'name']) {
+    const j = head.findIndex((c, idx) => CSV_HEADINGS[k].test(c) && !Object.values(found).includes(idx));
+    if (j >= 0) found[k] = j;
+  }
+  if (found.eligible !== undefined || found.applicants !== undefined) {           // a header row
+    if (found.eligible === undefined) throw new Error('the header row has no column for eligible faculty');
+    if (found.applicants === undefined) throw new Error('the header row has no column for applicants');
+    if (found.name === undefined) found.name = head.findIndex((c, idx) => !Object.values(found).includes(idx));
+    if (found.name < 0) throw new Error('the header row has no column for the college name');
+    cols = found; first = 1;
+  } else {
+    if (rows.every(r => r.length < 3)) throw new Error('rows need at least three columns: college, eligible faculty, applicants');
+    cols = { name: 0, eligible: 1, applicants: 2, carry: 3 };
+  }
+  const colleges = [];
+  for (let i = first; i < rows.length; i++) {
+    const r = rows[i];
+    const name = r[cols.name] || '';
+    if (name.toLowerCase() === 'total') continue;
+    colleges.push({
+      name,
+      eligible: cellNum(r[cols.eligible], NaN),
+      applicants: cellNum(r[cols.applicants], 0),
+      carry: cols.carry === undefined ? 0 : cellNum(r[cols.carry], 0),
+    });
+  }
+  if (!colleges.length) throw new Error('no college rows were found after the header row');
+  return colleges;
+}
+function formatInputsCsv(colleges) {
+  const q = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const num = v => Number.isFinite(v) ? String(v) : '';
+  const lines = [['College', 'Eligible faculty', 'Applicants', 'Carry forward'].join(',')];
+  colleges.forEach(c => lines.push([q(c.name), num(c.eligible), num(c.applicants), num(c.carry)].join(',')));
+  return lines.join('\r\n') + '\r\n';
+}
+
 /* ---------- UI ---------- */
 (function () {
   /* The page opens with the CSUN colleges listed and counts at zero; the committee enters
@@ -592,11 +666,8 @@ function validate(colleges, percent) {
   });
   document.addEventListener('click', e => {
     if (e.target.id !== 'btnSaveNext' || !lastResult) return;
-    const next = {
-      format: 'sabbatical-allocation-inputs', version: 3, percent: state.percent, rounding: state.rounding, tieMethod: state.tieMethod,
-      colleges: lastResult.res.final.map(f => ({ name: f.name, eligible: 0, applicants: 0, carry: f.carryNext })),
-    };
-    download('sabbatical-inputs-next-year.json', JSON.stringify(next, null, 2), 'application/json');
+    const next = lastResult.res.final.map(f => ({ name: f.name, eligible: 0, applicants: 0, carry: f.carryNext }));
+    download('sabbatical-inputs-next-year.csv', formatInputsCsv(next), 'text/csv');
   });
   let wasOpen = [];
   window.addEventListener('beforeprint', () => {  // CSS cannot open a closed <details>, so do it here
@@ -616,30 +687,31 @@ function validate(colleges, percent) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
   $('btnSave').addEventListener('click', () => {
-    download('sabbatical-inputs.json', JSON.stringify({ format: 'sabbatical-allocation-inputs', version: 3, ...state }, null, 2), 'application/json');
+    download('sabbatical-inputs.csv', formatInputsCsv(state.colleges), 'text/csv');
   });
   $('fileLoad').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     const r = new FileReader();
     r.onload = () => {
       try {
-        let d;
-        try { d = JSON.parse(r.result); } catch (e) { throw new Error('it is not in JSON format'); }
-        if (!d || typeof d !== 'object') throw new Error('it does not contain a list of colleges');
-        if (!Array.isArray(d.colleges)) throw new Error('it has no "colleges" list');
-        if (d.colleges.some(c => !c || typeof c !== 'object')) throw new Error('an entry in the "colleges" list is not a college');
-        state = {
-          percent: Number.isFinite(+d.percent) ? +d.percent : 12,
-          rounding: ['down', 'nearest', 'up'].includes(d.rounding) ? d.rounding : 'up',
-          tieMethod: TIE_METHODS.includes(d.tieMethod) ? d.tieMethod : 'eligible',   // before version 3: eligible faculty
-          colleges: d.colleges.map(c => ({
+        const text = String(r.result).replace(/^\uFEFF/, '');
+        let colleges;
+        if (/^\s*\{/.test(text)) {                       // an inputs file saved in JSON format by an earlier version of this page
+          let d;
+          try { d = JSON.parse(text); } catch (e) { throw new Error('it looks like a JSON file but could not be read'); }
+          if (!d || !Array.isArray(d.colleges) || d.colleges.some(c => !c || typeof c !== 'object')) throw new Error('it has no "colleges" list');
+          colleges = d.colleges.map(c => ({
             name: String(c.name ?? ''), eligible: toInt(String(c.eligible ?? '')), applicants: toInt(String(c.applicants ?? '')),
-            carry: c.carry == null || c.carry === '' ? 0 : Number(c.carry),   // version-1 files have no carry forward
-          })),
-        };
+            carry: c.carry == null || c.carry === '' ? 0 : Number(c.carry),
+          }));
+        } else {
+          colleges = parseInputsCsv(text);
+        }
+        state.colleges = colleges;
+        state.tieMethod = 'eligible';                    // the file's order is kept, but the tie rule returns to its default
         renderInputs();
       } catch (err) {
-        showErrors([`The file "${f.name}" could not be loaded: ${err.message}. The page expects a JSON file with a "colleges" list in which each entry has a name, eligible faculty, and applicants; see "Files" under "How the allocation is calculated" at the end of the page. The easiest way to get a correct file is "Save inputs to file".`]);
+        showErrors([`The file "${f.name}" could not be loaded: ${err.message}. The page expects a spreadsheet saved as CSV with a header row and a column each for the college name, eligible faculty, applicants and, optionally, carry forward; see "Files" under "How the allocation is calculated" at the end of the page. "Save inputs to file" writes a file in the right shape.`]);
       }
       e.target.value = '';
     };
@@ -824,7 +896,7 @@ function validate(colleges, percent) {
         <td class="l why">${carryReason(f)}</td>
       </tr>`).join('')}</tbody>
     </table></div>`);
-    h.push(`<div class="toolbar noprint"><button type="button" id="btnSaveNext">Save next year's starting inputs to file</button><span class="hint">Writes a file with these college names and next year's carry forward, with the counts cleared, ready to load next year.</span></div>`);
+    h.push(`<div class="toolbar noprint"><button type="button" id="btnSaveNext">Save next year's starting inputs to file</button><span class="hint">Writes a CSV file with these college names and next year's carry forward, with the counts cleared, ready to load next year.</span></div>`);
 
     /* rounds */
     h.push(`<h2>Round by round</h2>`);

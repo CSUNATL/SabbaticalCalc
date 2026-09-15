@@ -56,21 +56,21 @@ Termination argument: from round 2 on, every participant has `demand > 0`. A rou
 - Reordering: `moveCollege(from, to)` splices the array, sets `state.tieMethod = 'list'` if it was `'eligible'` (a list rule already chosen is kept), and re-renders (the user can change the select back). Drag uses the native HTML5 drag-and-drop API with no library: `mousedown` on the handle sets `draggable` on its row (so text in the inputs can still be selected), `dragover` marks the target row `drop-before` or `drop-after` from the pointer's position relative to the row's midpoint, and `drop` computes the target index (adjusted by one when moving downward). The arrow buttons are the keyboard and touch path.
 - `recalc()`: trims names, updates input totals, runs `validate`. On errors: show the list, clear results. Otherwise: `computeSeatPool`, `allocate`, store `lastResult`, render the seat-rule sentence, and set `#results.innerHTML = renderResults(...)`.
 - `renderResults()` builds, in order: seat flow boxes, notes (unallocated / unfunded), final allocation table, round-by-round sections (`roundNarrative` + `roundTable` per round), and the step-by-step record inside a `<details>`. All are template strings; user-supplied names pass through `esc()`.
-- Save: serialize `state` (plus `format`/`version` fields) to a Blob download. Loading a file before version 3 sets `tieMethod` to `'eligible'`. Load: `FileReader` → JSON → coerce fields defensively → `renderInputs()`. CSV: built from `lastResult`, quoted fields, CRLF.
+- Save: `formatInputsCsv(state.colleges)` to a Blob download. Load: `FileReader` → `parseInputsCsv` (or, for a file starting with `{`, the JSON shape earlier versions wrote) → `state.colleges`, `state.tieMethod = 'eligible'` → `renderInputs()`. Percent and rounding are not in the file and are left as set on the page.
 - Print: `window.print()`. A `beforeprint` handler opens every `<details>` and `afterprint` restores their previous state, since CSS cannot reveal the content of a closed `<details>`. CSS `@media print` hides `.noprint`, page-breaks before each `h2`, and preserves the highlight colors.
 - Method description: `<details id="method">` at the end of the page, a numbered procedure plus the reasoning for the two non-obvious rules. Links with class `methodlink` (one in the header, one in the round-by-round intro) set `open` on it via a delegated click handler before the anchor scrolls.
 
 ### Data formats
 
-Saved inputs (`sabbatical-inputs.json`):
+Inputs file (`sabbatical-inputs.csv`, also what "Save next year's starting inputs" writes):
 
-```json
-{ "format": "sabbatical-allocation-inputs", "version": 3,
-  "percent": 12, "rounding": "up", "tieMethod": "eligible",
-  "colleges": [ { "name": "Engineering", "eligible": 120, "applicants": 6, "carry": 0 } ] }
+```
+College,Eligible faculty,Applicants,Carry forward
+Humanities,39,13,0
+Library,18,2,0.333
 ```
 
-Loader accepts any file with a `colleges` array; missing `percent`/`rounding`/`tieMethod` fall back to defaults and a missing `carry` (version-1 files) is 0. The order of `colleges` is the list order. The same shape and the defaults are documented for users in the page's "Files" section (`#method-files`), which must be kept in step with the loader; a failed load reports one of four reasons (not JSON, not an object, no `colleges` list, an entry that is not an object) and points to that section. Bump `version` if the shape changes and keep the loader backward compatible. The "Save next year's starting inputs" button writes the same format with `carry` set to each college's `carryNext` and counts at 0.
+`parseInputsCsv` and `formatInputsCsv` live in `src/logic.js` so they are tested under Node. The parser detects the delimiter (comma, semicolon, tab) from the first line, handles quoted cells and a byte-order mark, recognises a header row by headings containing eligib/applic (then matches college/name and carry by heading, any order, extras ignored), falls back to positional columns without a header, skips blank rows and a row named "Total", reads blank applicants/carry as 0 and blank eligible as `NaN` (so `validate` reports it), and throws an `Error` whose message completes "could not be loaded: ...". Row order is the list order. Files starting with `{` are read as the JSON shape earlier versions saved (`{ colleges: [{ name, eligible, applicants, carry }] }`; other fields ignored). The same shape and the rules are documented for users in the page's "Files" section (`#method-files`), which must be kept in step with the parser; a failed load reports the parser's reason and points to that section. Bump `version` if the shape changes and keep the loader backward compatible. The "Save next year's starting inputs" button writes the same format with `carry` set to each college's `carryNext` and counts at 0.
 
 ## Design system
 
@@ -90,5 +90,5 @@ The UI has no other automated tests. `tools/screenshot.py` renders the built fil
 ## Extension points
 
 - New tie-break rule: add an entry to `TIE_STEPS` (and a comparator to `TIE_STEP_CMP` if it needs a new step), add an `<option>` and a `TIE_METHOD_LABEL` entry in the UI, add a test, and update REQUIREMENTS R4.2 and the method text. The carry-forward year-end rule lives in `allocate`'s `final` mapping.
-- Carry-over between years: add fields to `state`/JSON (`version: 2`), pass them into `allocate`, and add a column to the final table. Keep `allocate` pure.
+- Carry-over between years: add a column to the inputs CSV (parser, formatter, and the Files section), pass it into `allocate`, and add a column to the final table. Keep `allocate` pure.
 - Institution branding / sign-off block for print: markup and CSS only, no logic change.

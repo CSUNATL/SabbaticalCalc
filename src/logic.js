@@ -181,7 +181,89 @@ function validate(colleges, percent) {
   return errors;
 }
 
+/* ---------- Inputs file: a CSV spreadsheet ---------- */
+/* The inputs file is a spreadsheet saved as CSV with one row per college and columns for the college
+   name, eligible faculty, applicants and, optionally, carry forward. Nothing else is in the file: the
+   seat percentage, rounding rule and tie rule are set on the page.
+   parseInputsCsv(text) -> [{ name, eligible, applicants, carry }] in file order.
+     - The delimiter is whichever of comma, semicolon or tab is most frequent in the first line, so
+       files from Excel in any locale and tab-separated files both load. Quoted cells may contain the
+       delimiter and doubled quotes. A leading byte-order mark is ignored.
+     - The first row is a header if it names an eligible-faculty or applicants column; the columns are
+       then matched by their headings (college/name, eligib..., applic..., carry) in any order. Without
+       a header the columns are taken as: college, eligible faculty, applicants, carry forward.
+     - Blank rows and a row named "Total" are skipped. A blank applicants or carry-forward cell is 0;
+       a blank eligible-faculty cell is NaN so validate() reports it. Thousands separators are removed.
+     - Throws an Error whose message completes "The file could not be loaded: ..." when there is nothing
+       usable in the file.
+   formatInputsCsv(colleges) -> the same shape with a header row, CRLF line endings, for Excel. */
+const CSV_HEADINGS = { name: /college|name|unit|school|division/i, eligible: /eligib/i, applicants: /applic/i, carry: /carry/i };
+function csvRows(text) {
+  text = String(text || '').replace(/^\uFEFF/, '');
+  const firstLine = text.split(/\r?\n/).find(l => l.trim()) || '';
+  const delim = [',', ';', '\t'].map(d => [d, firstLine.split(d).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], cell = '', quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch !== '"') cell += ch;
+      else if (text[i + 1] === '"') { cell += '"'; i++; }
+      else quoted = false;
+    } else if (ch === '"') quoted = true;
+    else if (ch === delim) { row.push(cell); cell = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(cell); rows.push(row); row = []; cell = '';
+    } else cell += ch;
+  }
+  if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+  return rows.map(r => r.map(c => c.trim())).filter(r => r.some(c => c !== ''));
+}
+function parseInputsCsv(text) {
+  const rows = csvRows(text);
+  if (!rows.length) throw new Error('the file is empty');
+  const cellNum = (s, blank) => { const t = (s || '').replace(/[,\s]/g, ''); return t === '' ? blank : Number(t); };
+  let cols, first = 0;
+  const head = rows[0];
+  const found = {};
+  for (const k of ['eligible', 'applicants', 'carry', 'name']) {
+    const j = head.findIndex((c, idx) => CSV_HEADINGS[k].test(c) && !Object.values(found).includes(idx));
+    if (j >= 0) found[k] = j;
+  }
+  if (found.eligible !== undefined || found.applicants !== undefined) {           // a header row
+    if (found.eligible === undefined) throw new Error('the header row has no column for eligible faculty');
+    if (found.applicants === undefined) throw new Error('the header row has no column for applicants');
+    if (found.name === undefined) found.name = head.findIndex((c, idx) => !Object.values(found).includes(idx));
+    if (found.name < 0) throw new Error('the header row has no column for the college name');
+    cols = found; first = 1;
+  } else {
+    if (rows.every(r => r.length < 3)) throw new Error('rows need at least three columns: college, eligible faculty, applicants');
+    cols = { name: 0, eligible: 1, applicants: 2, carry: 3 };
+  }
+  const colleges = [];
+  for (let i = first; i < rows.length; i++) {
+    const r = rows[i];
+    const name = r[cols.name] || '';
+    if (name.toLowerCase() === 'total') continue;
+    colleges.push({
+      name,
+      eligible: cellNum(r[cols.eligible], NaN),
+      applicants: cellNum(r[cols.applicants], 0),
+      carry: cols.carry === undefined ? 0 : cellNum(r[cols.carry], 0),
+    });
+  }
+  if (!colleges.length) throw new Error('no college rows were found after the header row');
+  return colleges;
+}
+function formatInputsCsv(colleges) {
+  const q = v => { const s = String(v ?? ''); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const num = v => Number.isFinite(v) ? String(v) : '';
+  const lines = [['College', 'Eligible faculty', 'Applicants', 'Carry forward'].join(',')];
+  colleges.forEach(c => lines.push([q(c.name), num(c.eligible), num(c.applicants), num(c.carry)].join(',')));
+  return lines.join('\r\n') + '\r\n';
+}
+
 /* Node export for tests; ignored in the browser. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { computeSeatPool, hamilton, allocate, validate, TIE_METHODS };
+  module.exports = { computeSeatPool, hamilton, allocate, validate, TIE_METHODS, parseInputsCsv, formatInputsCsv };
 }
