@@ -43,6 +43,8 @@ test('page has the pieces the UI relies on', () => {
   assert.match(dist, /addEventListener\('afterprint'/);
   assert.match(dist, /id="percent"[^>]*step="0\.0001"/);
   assert.match(dist, /id="tieMethod"/);
+  assert.match(dist, /id="method-files"/);
+  assert.match(dist, /href="#method-files" class="methodlink"/);
   assert.match(dist, /addEventListener\('dragstart'/);
   assert.match(dist, /data-mv="-1"/);
   assert.doesNotMatch(dist, /localeCompare/);            // name is no longer a tie-break rule

@@ -70,7 +70,7 @@ Saved inputs (`sabbatical-inputs.json`):
   "colleges": [ { "name": "Engineering", "eligible": 120, "applicants": 6, "carry": 0 } ] }
 ```
 
-Loader accepts any file with a `colleges` array; missing `percent`/`rounding`/`tieMethod` fall back to defaults and a missing `carry` (version-1 files) is 0. The order of `colleges` is the list order. Bump `version` if the shape changes and keep the loader backward compatible. The "Save next year's starting inputs" button writes the same format with `carry` set to each college's `carryNext` and counts at 0.
+Loader accepts any file with a `colleges` array; missing `percent`/`rounding`/`tieMethod` fall back to defaults and a missing `carry` (version-1 files) is 0. The order of `colleges` is the list order. The same shape and the defaults are documented for users in the page's "Files" section (`#method-files`), which must be kept in step with the loader; a failed load reports one of four reasons (not JSON, not an object, no `colleges` list, an entry that is not an object) and points to that section. Bump `version` if the shape changes and keep the loader backward compatible. The "Save next year's starting inputs" button writes the same format with `carry` set to each college's `carryNext` and counts at 0.
 
 ## Design system
 

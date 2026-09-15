@@ -75,6 +75,25 @@ def main() -> int:
         rule = page.locator("#ruleOut").inner_text()
         assert "375 eligible faculty × 18.4% = 69, rounded up to 69 seats" in rule, rule
 
+        # Loading files: a file that is not JSON gives a message that says what is expected; a minimal
+        # hand-written file with only the required fields loads.
+        import tempfile, json
+        tmp = tempfile.mkdtemp()
+        bad = os.path.join(tmp, "notes.txt")
+        with open(bad, "w", encoding="utf-8") as fh:
+            fh.write("this is not a saved inputs file")
+        page.set_input_files("#fileLoad", bad)
+        msg = page.locator("#errors").inner_text()
+        assert "could not be loaded: it is not in JSON format" in msg and '"colleges" list' in msg, msg
+        minimal = os.path.join(tmp, "minimal.json")
+        with open(minimal, "w", encoding="utf-8") as fh:
+            json.dump({"colleges": [{"name": "A", "eligible": 100, "applicants": 3}, {"name": "B", "eligible": 50, "applicants": 2}]}, fh)
+        page.set_input_files("#fileLoad", minimal)
+        assert page.locator("#inputRows tr").count() == 2
+        assert "150 eligible faculty" in page.locator("#ruleOut").inner_text()
+        assert page.locator("#tieMethod").input_value() == "eligible"
+        page.click("#btnTest")
+
         # One validation error: results withheld, message shown.
         page.fill("#inputRows tr:nth-child(1) input[data-k=applicants]", "999")
         assert "cannot exceed eligible faculty" in page.locator("#errors").inner_text()

@@ -144,6 +144,8 @@
   .method ol { max-width: 78ch; padding-left: 24px; }
   .method li { margin: 10px 0; }
   .method h3 { font-size: 18px; margin-top: 24px; }
+  .method pre { background: var(--stripe); border: 1px solid var(--rule); padding: 10px 12px; font-size: 13px; line-height: 1.4; overflow-x: auto; }
+  .method code { font-size: 13.5px; }
   .methodlink { font-weight: 600; }
   .hidden { display: none; }
   footer { margin-top: 64px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 12px; }
@@ -179,6 +181,7 @@
       <button type="button" id="btnCsv">Download results (CSV)</button>
       <button type="button" id="btnPrint">Print or save as PDF</button>
     </div>
+    <p class="hint noprint">Saved inputs are small text files that this page writes and reads back. <a href="#method-files" class="methodlink">What is in a saved inputs file?</a></p>
   </header>
 
   <section>
@@ -237,6 +240,21 @@
     <p>If settled colleges kept taking part, a returned seat could be handed to a college that cannot use it, returned again, and handed to it again without end, while a college with an applicant waiting went without. Restricting later rounds to unsettled colleges sends every returned seat to a college that can use it and guarantees the process ends.</p>
     <h3>Why there is a carry forward</h3>
     <p>When two colleges have exactly the same fractional part, the rule that decides the seat has nothing to do with need. The carry forward records the fraction the losing college was denied, so that the next time it is in a tie the seat goes to it. It persists from year to year until the college wins a tie. It is used for nothing else: it does not change quotas, whole seats, or the ranking of fractional parts that are not tied. Within a year, a college that has won a tie is treated as having no carry forward in later rounds.</p>
+    <h3 id="method-files">Files</h3>
+    <p>"Save inputs to file" writes a small text file in JSON format holding everything entered on this page: the seat percentage, the rounding rule, the tie rule, and the colleges in list order with their eligible faculty, applicants, and carry forward. "Load inputs from file" reads such a file back. "Save next year's starting inputs to file", in the carry-forward report, writes the same kind of file with next year's carry forwards filled in and the counts cleared. The results CSV is for spreadsheets and cannot be loaded.</p>
+    <p>A file can also be written by hand or produced from a spreadsheet, as long as it has this shape:</p>
+<pre>{
+  "format": "sabbatical-allocation-inputs",
+  "version": 3,
+  "percent": 12,
+  "rounding": "up",
+  "tieMethod": "eligible",
+  "colleges": [
+    { "name": "Humanities", "eligible": 39, "applicants": 13, "carry": 0 },
+    { "name": "Library",    "eligible": 18, "applicants": 2,  "carry": 0.333 }
+  ]
+}</pre>
+    <p>Only the <code>colleges</code> list is required, and within each entry only <code>name</code>, <code>eligible</code>, and <code>applicants</code>. A missing <code>carry</code> is taken as 0. A missing <code>percent</code>, <code>rounding</code> (<code>up</code>, <code>nearest</code>, or <code>down</code>), or <code>tieMethod</code> (<code>eligible</code>, <code>list</code>, or <code>list-only</code>) takes the default shown on the page. Names must be unique, counts must be whole numbers, and the order of the list is the order the page shows. Files written by earlier versions of this page load as well.</p>
     <h3>What to check</h3>
     <p>The round tables show, for every college in every round, its exact quota, whole seats, fractional part, rank, extra seat, allocation, seats funded, and seats returned. The carry-forward report lists every tie, who won and lost it and by which rule, and the value each college carries into next year. The step-by-step record at the end of the results writes out every division and every seat movement in order, with a checksum for each round and for the whole allocation. The CSV download contains the same tables.</p>
   </details>
@@ -424,8 +442,11 @@
     const r = new FileReader();
     r.onload = () => {
       try {
-        const d = JSON.parse(r.result);
-        if (!Array.isArray(d.colleges)) throw new Error('no colleges array');
+        let d;
+        try { d = JSON.parse(r.result); } catch (e) { throw new Error('it is not in JSON format'); }
+        if (!d || typeof d !== 'object') throw new Error('it does not contain a list of colleges');
+        if (!Array.isArray(d.colleges)) throw new Error('it has no "colleges" list');
+        if (d.colleges.some(c => !c || typeof c !== 'object')) throw new Error('an entry in the "colleges" list is not a college');
         state = {
           percent: Number.isFinite(+d.percent) ? +d.percent : 12,
           rounding: ['down', 'nearest', 'up'].includes(d.rounding) ? d.rounding : 'up',
@@ -437,7 +458,7 @@
         };
         renderInputs();
       } catch (err) {
-        showErrors([`The file could not be read as a saved inputs file (${err.message}). Use a file created with "Save inputs to file".`]);
+        showErrors([`The file "${f.name}" could not be loaded: ${err.message}. The page expects a JSON file with a "colleges" list in which each entry has a name, eligible faculty, and applicants; see "Files" under "How the allocation is calculated" at the end of the page. The easiest way to get a correct file is "Save inputs to file".`]);
       }
       e.target.value = '';
     };

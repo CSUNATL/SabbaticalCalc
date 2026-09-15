@@ -164,3 +164,7 @@ Jeff asked for the source page and the built file to share a name, since `app.ht
 ### Focus ring on the file-load control (same session)
 
 The hidden 1px file input received keyboard focus, so the focus ring was invisible. Fixed with `.filebtn:focus-within`, which draws the ring on the visible label. No logic change.
+
+### Documenting the inputs file (same session)
+
+Jeff asked how a person would know the format for "Load inputs from file"; nothing on the page said. Added a "Files" section to the method description with an example file and the list of required and optional fields, a link to it beside the toolbar, and a load error that names the reason (not JSON, no colleges list, and so on) and points to the section. The loader itself is unchanged apart from clearer checks; a file with only `colleges` and each entry's name, eligible, and applicants loads, which the screenshot tool now exercises. A CSV import was discussed and not built.
