@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sabbatical allocation worksheet</title>
+<style>
+  :root {
+    --paper: #ffffff;
+    --ink: #1a2433;
+    --muted: #5f6b7a;
+    --rule: #d7dce3;
+    --rule-strong: #9aa4b1;
+    --stripe: #f5f7fa;
+    --pool: #1e5aa8;      --pool-tint: #e4edf9;
+    --return: #8a4b00;    --return-tint: #fcefd9;
+    --settled: #1f6e43;   --settled-tint: #e1f1e7;
+    --error: #a32828;     --error-tint: #fbe5e5;
+    --serif: "Palatino Linotype", Palatino, "Book Antiqua", "Iowan Old Style", Georgia, serif;
+    --sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); color: var(--ink); }
+  body {
+    margin: 0; padding: 32px 24px 96px;
+    font-family: var(--sans); font-size: 15px; line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  main { max-width: 1280px; margin: 0 auto; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.2; margin: 0; }
+  h1 { font-size: 36px; letter-spacing: -0.01em; }
+  h2 { font-size: 26px; margin-top: 56px; padding-bottom: 8px; border-bottom: 1px solid var(--rule-strong); }
+  h3 { font-size: 21px; margin-top: 36px; }
+  p { margin: 12px 0; max-width: 78ch; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 70ch; margin-top: 8px; }
+  a { color: var(--pool); }
+
+  /* controls */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+  button, .filebtn {
+    font: inherit; font-size: 14px; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule-strong); border-radius: 3px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover, .filebtn:hover { background: var(--stripe); }
+  button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button.primary:hover { background: #2b3648; }
+  button.quiet { border-color: transparent; color: var(--muted); padding: 2px 8px; }
+  button.quiet:hover { color: var(--error); background: var(--error-tint); }
+  :focus-visible { outline: 2px solid var(--pool); outline-offset: 2px; }
+  input[type=text], input[type=number], select {
+    font: inherit; font-size: 15px; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 5px 8px; width: 100%;
+  }
+  input[type=number] { text-align: right; }
+  input:invalid { border-color: var(--error); }
+  .filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .filebtn { position: relative; display: inline-block; }
+
+  /* seat rule */
+  .rule-line { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 4px; font-size: 16px; }
+  .rule-line input[type=number] { width: 84px; }
+  .rule-line select { width: auto; }
+  .rule-out { font-family: var(--serif); font-size: 20px; margin: 10px 0 0; }
+  .rule-out .big { font-size: 30px; }
+
+  /* tables */
+  table { border-collapse: collapse; width: 100%; margin-top: 16px; font-size: 13.5px; }
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--rule); vertical-align: middle; white-space: nowrap; }
+  th { font-weight: 600; text-align: right; color: var(--muted); border-bottom: 1px solid var(--rule-strong); white-space: normal; vertical-align: bottom; line-height: 1.25; max-width: 90px; }
+  th.l { max-width: none; }
+  th.l, td.l { text-align: left; }
+  td.l:first-child { white-space: normal; min-width: 180px; }  /* college names may wrap so wide tables fit */
+  tbody tr:nth-child(even) { background: var(--stripe); }
+  tfoot td { font-weight: 600; border-top: 1px solid var(--rule-strong); border-bottom: none; }
+  .tablewrap { overflow-x: auto; }
+  #inputs td { padding: 4px 6px; }
+  #inputs td.name { min-width: 220px; }
+  #inputs td.num { width: 140px; }
+  #inputs td.rm { width: 40px; text-align: center; }
+
+  /* emphasis in round tables */
+  td.extra { background: var(--pool-tint); color: var(--pool); font-weight: 600; }
+  td.returned { color: var(--return); }
+  td.returned.nz { background: var(--return-tint); font-weight: 600; }
+  td.funded.nz { font-weight: 600; }
+  .st { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 13px; }
+  .st.settled { background: var(--settled-tint); color: var(--settled); }
+  .st.waiting { background: var(--return-tint); color: var(--return); }
+  .st.none { background: var(--stripe); color: var(--muted); }
+
+  /* messages */
+  .errors { margin: 16px 0 0; padding: 12px 16px; background: var(--error-tint); border-left: 3px solid var(--error); color: var(--error); }
+  .errors ul { margin: 6px 0 0; padding-left: 20px; }
+  .note { margin: 16px 0 0; padding: 12px 16px; background: var(--pool-tint); border-left: 3px solid var(--pool); max-width: 78ch; }
+  .note.warn { background: var(--return-tint); border-color: var(--return); }
+
+  /* seat flow */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; margin-top: 20px; }
+  .flow .box { border: 1px solid var(--rule-strong); padding: 10px 14px; min-width: 150px; }
+  .flow .box .n { font-family: var(--serif); font-size: 28px; line-height: 1.1; }
+  .flow .box .l { color: var(--muted); font-size: 13px; }
+  .flow .box.pool { background: var(--pool-tint); border-color: var(--pool); }
+  .flow .box.settled { background: var(--settled-tint); border-color: var(--settled); }
+  .flow .box.unalloc { background: var(--return-tint); border-color: var(--return); }
+  .flow .arrow { align-self: center; padding: 0 10px; color: var(--muted); font-size: 22px; }
+
+  .outcome { margin: 12px 0 0; padding-left: 20px; max-width: 80ch; }
+  .outcome li { margin: 4px 0; }
+  .byround { color: var(--muted); }
+  ol.record { list-style: none; counter-reset: rec; padding-left: 40px; max-width: 90ch; }
+  ol.record li { margin: 5px 0; position: relative; }
+  ol.record li:not(.head) { counter-increment: rec; }
+  ol.record li:not(.head)::before { content: counter(rec) "."; position: absolute; left: -40px; width: 32px; text-align: right; color: var(--muted); }
+  ol.record li.head { margin: 18px 0 6px -40px; font-family: var(--serif); font-size: 18px; }
+  details { margin-top: 20px; }
+  summary { cursor: pointer; font-family: var(--serif); font-size: 21px; }
+  details[open] summary { margin-bottom: 8px; }
+  .method dl { max-width: 78ch; }
+  .method dt { font-weight: 600; margin-top: 12px; }
+  .method dd { margin: 4px 0 0 0; }
+  .hidden { display: none; }
+  footer { margin-top: 64px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 12px; }
+
+  @media (max-width: 720px) {
+    body { padding: 20px 14px 64px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 22px; margin-top: 40px; }
+  }
+  @media print {
+    body { padding: 0; font-size: 12px; }
+    .noprint { display: none !important; }
+    details { display: block; }
+    details > summary { list-style: none; }
+    details:not([open]) > *:not(summary) { display: block; }
+    h2 { break-before: page; }
+    h2:first-of-type { break-before: auto; }
+    tbody tr:nth-child(even) { background: var(--stripe) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    td.extra, td.returned.nz, .st, .flow .box, .note { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Sabbatical allocation worksheet</h1>
+    <p class="lede">Distributes a fixed pool of sabbatical seats across colleges in proportion to eligible faculty, using the Hamilton (largest-remainder) method. Every number below can be checked by hand from the inputs.</p>
+    <div class="toolbar noprint">
+      <button type="button" id="btnReset">Reset to CSUN colleges</button>
+      <button type="button" id="btnClear">Clear all colleges</button>
+      <button type="button" id="btnSave">Save inputs to file</button>
+      <label class="filebtn">Load inputs from file<input type="file" id="fileLoad" accept=".json,application/json"></label>
+      <button type="button" id="btnCsv">Download results (CSV)</button>
+      <button type="button" id="btnPrint">Print or save as PDF</button>
+    </div>
+  </header>
+
+  <section>
+    <h2>Inputs</h2>
+    <div class="rule-line">
+      <span>Seats available =</span>
+      <input type="number" id="percent" min="0" max="100" step="0.01" value="12" aria-label="Seat percentage"><span>% of all eligible faculty,</span>
+      <select id="rounding" aria-label="Rounding rule">
+        <option value="up" selected>rounded up</option>
+        <option value="nearest">rounded to nearest</option>
+        <option value="down">rounded down</option>
+      </select>
+      <span>to a whole number.</span>
+    </div>
+    <p class="rule-out" id="ruleOut"></p>
+
+    <div class="tablewrap">
+      <table id="inputs">
+        <thead><tr><th class="l">College</th><th>Eligible faculty</th><th>Applicants</th><th class="noprint"></th></tr></thead>
+        <tbody id="inputRows"></tbody>
+        <tfoot><tr><td class="l">Total</td><td id="totElig"></td><td id="totApps"></td><td class="noprint"></td></tr></tfoot>
+      </table>
+    </div>
+    <div class="toolbar noprint"><button type="button" id="btnAdd">Add a college</button></div>
+    <div id="errors" class="errors hidden" role="alert"></div>
+  </section>
+
+  <div id="results"></div>
+
+  <details class="method">
+    <summary>How the calculation works</summary>
+    <dl>
+      <dt>Seat pool</dt>
+      <dd>Total eligible faculty across all colleges × the percentage, rounded by the rule chosen above.</dd>
+      <dt>Exact quota</dt>
+      <dd>For each college taking part in a round: seats in the pool × (that college's eligible faculty ÷ eligible faculty of all colleges taking part).</dd>
+      <dt>Whole seats and extra seats (Hamilton method)</dt>
+      <dd>Each college first receives the whole-number part of its quota. The seats left over, which always number fewer than the colleges taking part, go one each to the colleges with the largest fractional parts. Fractional parts are compared exactly, not as rounded decimals. If two colleges are tied at the cutoff, the seat goes to the one with more eligible faculty; if still tied, alphabetical order by name.</dd>
+      <dt>Matching seats to applicants</dt>
+      <dd>A college cannot use more seats than it has applicants. Seats beyond a college's applicants are returned to the pool. A college whose applicants are all funded is settled.</dd>
+      <dt>Round 1</dt>
+      <dd>Every college takes part, including colleges with no applicants. This fixes each college's baseline entitlement from headcount alone, so the same headcounts always produce the same round-1 quotas regardless of who applied.</dd>
+      <dt>Later rounds</dt>
+      <dd>Returned seats are divided, by the same method, among only the colleges that still have unfunded applicants. Settled colleges do not take part. Because every seat in these rounds goes to a college that can use it, the process ends within a number of rounds no greater than the number of colleges plus one.</dd>
+      <dt>Ending</dt>
+      <dd>The process stops when the pool is empty or when every college is settled. In the second case the seats left over cannot be placed and are reported as unallocated.</dd>
+    </dl>
+  </details>
+
+  <footer>Self-contained file. Nothing is sent anywhere; inputs are kept only in this page until you save them to a file.</footer>
+</main>
+
+<script>
+/* ---------- Allocation logic (pure; no DOM) ---------- */
+
+function computeSeatPool(colleges, percent, rounding) {
+  const totalEligible = colleges.reduce((s, c) => s + c.eligible, 0);
+  const exact = totalEligible * percent / 100;
+  let seats;
+  if (rounding === 'nearest') seats = Math.round(exact);
+  else if (rounding === 'down') seats = Math.floor(exact);
+  else seats = Math.ceil(exact);
+  return { totalEligible, percent, exact, seats, rounding };
+}
+
+/* Hamilton (largest remainder) apportionment of `seats` among `parts`.
+   parts: [{ idx, name, eligible }]. Integer arithmetic throughout so ties are exact.
+   Tie-break for remainder seats: larger fractional part, then larger eligible count, then name. */
+function hamilton(parts, seats) {
+  const total = parts.reduce((s, p) => s + p.eligible, 0);
+  const rows = parts.map(p => {
+    const num = seats * p.eligible;
+    const whole = Math.floor(num / total);
+    const remNum = num - whole * total;           // numerator of fractional part (0..total-1)
+    return {
+      idx: p.idx, name: p.name, eligible: p.eligible,
+      share: p.eligible / total,
+      quota: num / total,
+      whole,
+      remNum, fraction: remNum / total,
+      remainderSeat: 0, rank: 0, allocated: whole,
+    };
+  });
+  const wholeSum = rows.reduce((s, r) => s + r.whole, 0);
+  const remainderSeats = seats - wholeSum;
+  const order = rows.slice().sort((a, b) =>
+    b.remNum - a.remNum || b.eligible - a.eligible || a.name.localeCompare(b.name));
+  order.forEach((r, i) => { r.rank = i + 1; });
+  for (let i = 0; i < remainderSeats; i++) { order[i].remainderSeat = 1; order[i].allocated = order[i].whole + 1; }
+  // Detect ties that mattered: same remNum straddling the cutoff
+  const ties = [];
+  if (remainderSeats > 0 && remainderSeats < order.length) {
+    const cut = order[remainderSeats - 1].remNum;
+    const tied = order.filter(r => r.remNum === cut);
+    if (tied.length > 1 && order[remainderSeats].remNum === cut) ties.push(...tied.map(r => r.name));
+  }
+  return { total, wholeSum, remainderSeats, rows, order, ties };
+}
+
+function allocate(colleges, seats) {
+  const n = colleges.length;
+  const demand = colleges.map(c => c.applicants);
+  const awarded = colleges.map(() => 0);
+  const byRound = colleges.map(() => []);
+  const settledIn = colleges.map(() => null);
+  const rounds = [];
+  let pool = seats;
+  let round = 0;
+  let unallocated = 0;
+  let stopReason = '';
+
+  while (true) {
+    if (pool === 0) { stopReason = 'All seats have been placed.'; break; }
+    round++;
+    const partIdx = round === 1
+      ? colleges.map((_, i) => i)
+      : colleges.map((_, i) => i).filter(i => demand[i] > 0);
+    if (partIdx.length === 0) {
+      unallocated = pool;
+      stopReason = `${pool} seat${pool === 1 ? '' : 's'} could not be placed: every college already has as many seats as it has applicants.`;
+      break;
+    }
+    if (round > n + 1) { stopReason = 'Stopped: round limit exceeded (this should not happen; check inputs).'; unallocated = pool; break; }
+
+    const parts = partIdx.map(i => ({ idx: i, name: colleges[i].name, eligible: colleges[i].eligible }));
+    const h = hamilton(parts, pool);
+    let surplusTotal = 0;
+    const settledNow = [];
+    h.rows.forEach(r => {
+      r.demandBefore = demand[r.idx];
+      r.funded = Math.min(r.allocated, demand[r.idx]);
+      r.surplus = r.allocated - r.funded;
+      demand[r.idx] -= r.funded;
+      awarded[r.idx] += r.funded;
+      if (r.funded > 0) byRound[r.idx].push({ round, seats: r.funded });
+      r.demandAfter = demand[r.idx];
+      r.settled = demand[r.idx] === 0;
+      if (r.settled && settledIn[r.idx] === null) { settledIn[r.idx] = round; settledNow.push(r.name); }
+      surplusTotal += r.surplus;
+    });
+    rounds.push({
+      round, pool, participants: partIdx.length, totalEligible: h.total,
+      wholeSum: h.wholeSum, remainderSeats: h.remainderSeats,
+      rows: h.rows, order: h.order, ties: h.ties,
+      funded: pool - surplusTotal, surplus: surplusTotal, settledNow,
+    });
+    pool = surplusTotal;
+  }
+
+  const final = colleges.map((c, i) => ({
+    idx: i, name: c.name, eligible: c.eligible, applicants: c.applicants,
+    awarded: awarded[i], unfunded: demand[i], byRound: byRound[i], settledIn: settledIn[i],
+  }));
+  return { seats, rounds, final, unallocated, stopReason, totalAwarded: awarded.reduce((s, a) => s + a, 0) };
+}
+
+function validate(colleges, percent) {
+  const errors = [];
+  if (!(percent >= 0 && percent <= 100)) errors.push('Seat percentage must be between 0 and 100.');
+  if (colleges.length === 0) errors.push('Add at least one college.');
+  const seen = new Map();
+  colleges.forEach((c, i) => {
+    const label = c.name.trim() ? `"${c.name.trim()}"` : `row ${i + 1}`;
+    if (!c.name.trim()) errors.push(`Row ${i + 1} needs a college name.`);
+    else if (seen.has(c.name.trim().toLowerCase())) errors.push(`${label} appears more than once.`);
+    seen.set(c.name.trim().toLowerCase(), true);
+    if (!Number.isInteger(c.eligible) || c.eligible < 0) errors.push(`${label}: eligible faculty must be a whole number of 0 or more.`);
+    if (!Number.isInteger(c.applicants) || c.applicants < 0) errors.push(`${label}: applicants must be a whole number of 0 or more.`);
+    if (Number.isInteger(c.eligible) && Number.isInteger(c.applicants) && c.applicants > c.eligible)
+      errors.push(`${label}: applicants (${c.applicants}) cannot exceed eligible faculty (${c.eligible}).`);
+  });
+  const totalEligible = colleges.reduce((s, c) => s + (Number.isInteger(c.eligible) ? c.eligible : 0), 0);
+  if (colleges.length && totalEligible === 0) errors.push('Enter the eligible faculty for each college; the total is currently zero.');
+  return errors;
+}
+
+
+
+/* ---------- UI ---------- */
+(function () {
+  /* The page opens with the CSUN colleges listed and counts at zero; the committee enters
+     each year's eligible faculty and applicants. Names can still be edited, added, or removed. */
+  const CSUN_COLLEGES = [
+    'Andrew J. Anagnost College of Engineering and Computer Science',
+    'Health & Human Development',
+    'Humanities',
+    'Counseling',
+    'Social & Behavioral Sciences',
+    'Science & Mathematics',
+    'David Nazarian College of Business & Economics',
+    'Library',
+    'Mike Curb College of Arts, Media, & Communication',
+    'Michael D. Eisner College of Education',
+  ];
+  const DEFAULTS = {
+    percent: 12, rounding: 'up',
+    colleges: CSUN_COLLEGES.map(name => ({ name, eligible: 0, applicants: 0 })),
+  };
+  let state = JSON.parse(JSON.stringify(DEFAULTS));
+  let lastResult = null;
+
+  const $ = id => document.getElementById(id);
+  const nf = new Intl.NumberFormat('en-US');
+  const n0 = v => nf.format(v);
+  const n3 = v => v.toFixed(3);
+  const pct = v => (v * 100).toFixed(1) + '%';
+  const plural = (n, s, p) => n === 1 ? s : (p || s + 's');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const list = names => names.length <= 1 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+
+  function toInt(v) { return v === '' ? NaN : Number(v); }
+
+  /* ----- inputs table ----- */
+  function renderInputs() {
+    const tb = $('inputRows');
+    tb.innerHTML = '';
+    state.colleges.forEach((c, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        `<td class="l name"><input type="text" value="${esc(c.name)}" data-i="${i}" data-k="name" aria-label="College name" placeholder="College name"></td>` +
+        `<td class="num"><input type="number" min="0" step="1" value="${Number.isNaN(c.eligible) ? '' : c.eligible}" data-i="${i}" data-k="eligible" aria-label="Eligible faculty"></td>` +
+        `<td class="num"><input type="number" min="0" step="1" value="${Number.isNaN(c.applicants) ? '' : c.applicants}" data-i="${i}" data-k="applicants" aria-label="Applicants"></td>` +
+        `<td class="rm noprint"><button type="button" class="quiet" data-rm="${i}" title="Remove this college" aria-label="Remove ${esc(c.name || 'row ' + (i + 1))}">×</button></td>`;
+      tb.appendChild(tr);
+    });
+    $('percent').value = state.percent;
+    $('rounding').value = state.rounding;
+    recalc();
+  }
+
+  $('inputRows').addEventListener('input', e => {
+    const el = e.target; if (!el.dataset.k) return;
+    const c = state.colleges[+el.dataset.i];
+    if (el.dataset.k === 'name') c.name = el.value; else c[el.dataset.k] = toInt(el.value);
+    recalc();
+  });
+  $('inputRows').addEventListener('click', e => {
+    const b = e.target.closest('button[data-rm]'); if (!b) return;
+    state.colleges.splice(+b.dataset.rm, 1); renderInputs();
+  });
+  $('btnAdd').addEventListener('click', () => {
+    state.colleges.push({ name: '', eligible: 0, applicants: 0 }); renderInputs();
+    const rows = $('inputRows').querySelectorAll('input[data-k=name]'); rows[rows.length - 1].focus();
+  });
+  $('percent').addEventListener('input', e => { state.percent = toInt(e.target.value); recalc(); });
+  $('rounding').addEventListener('change', e => { state.rounding = e.target.value; recalc(); });
+  $('btnReset').addEventListener('click', () => { state = JSON.parse(JSON.stringify(DEFAULTS)); renderInputs(); });
+  $('btnClear').addEventListener('click', () => { state.colleges = []; renderInputs(); });
+  $('btnPrint').addEventListener('click', () => window.print());
+
+  /* ----- save / load ----- */
+  function download(name, text, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  $('btnSave').addEventListener('click', () => {
+    download('sabbatical-inputs.json', JSON.stringify({ format: 'sabbatical-allocation-inputs', version: 1, ...state }, null, 2), 'application/json');
+  });
+  $('fileLoad').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (!Array.isArray(d.colleges)) throw new Error('no colleges array');
+        state = {
+          percent: Number.isFinite(+d.percent) ? +d.percent : 12,
+          rounding: ['down', 'nearest', 'up'].includes(d.rounding) ? d.rounding : 'up',
+          colleges: d.colleges.map(c => ({ name: String(c.name ?? ''), eligible: toInt(String(c.eligible ?? '')), applicants: toInt(String(c.applicants ?? '')) })),
+        };
+        renderInputs();
+      } catch (err) {
+        showErrors([`The file could not be read as a saved inputs file (${err.message}). Use a file created with "Save inputs to file".`]);
+      }
+      e.target.value = '';
+    };
+    r.readAsText(f);
+  });
+  $('btnCsv').addEventListener('click', () => {
+    if (!lastResult) return;
+    const { pool, res } = lastResult;
+    const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+    const lines = [];
+    lines.push(['Seat pool', 'Total eligible', pool.totalEligible, 'Percent', pool.percent, 'Exact', pool.exact, 'Rounding', pool.rounding, 'Seats', pool.seats].map(q).join(','));
+    lines.push('');
+    lines.push(['Round', 'College', 'Eligible', 'Share of eligible', 'Exact quota', 'Whole seats', 'Fraction', 'Rank', 'Extra seat', 'Allocated', 'Applicants awaiting', 'Funded this round', 'Returned to pool', 'Settled'].map(q).join(','));
+    res.rounds.forEach(rd => rd.rows.forEach(r => lines.push([rd.round, r.name, r.eligible, r.share, r.quota, r.whole, r.fraction, r.rank, r.remainderSeat, r.allocated, r.demandBefore, r.funded, r.surplus, r.settled ? 'yes' : 'no'].map(q).join(','))));
+    lines.push('');
+    lines.push(['Final', 'College', 'Eligible', 'Applicants', 'Seats awarded', 'Unfunded applicants', 'Awarded by round'].map(q).join(','));
+    res.final.forEach(f => lines.push(['', f.name, f.eligible, f.applicants, f.awarded, f.unfunded, f.byRound.map(b => `R${b.round}:${b.seats}`).join(' ')].map(q).join(',')));
+    lines.push(['', 'Unallocated seats', res.unallocated].map(q).join(','));
+    download('sabbatical-results.csv', lines.join('\r\n'), 'text/csv');
+  });
+
+  /* ----- calculation and results ----- */
+  function showErrors(list) {
+    const box = $('errors');
+    box.classList.toggle('hidden', list.length === 0);
+    box.innerHTML = list.length ? 'Results are not shown until these are fixed:<ul>' + list.map(e => `<li>${esc(e)}</li>`).join('') + '</ul>' : '';
+  }
+
+  function recalc() {
+    const cs = state.colleges.map(c => ({ name: c.name.trim(), eligible: c.eligible, applicants: c.applicants }));
+    const te = cs.reduce((s, c) => s + (Number.isInteger(c.eligible) ? c.eligible : 0), 0);
+    const ta = cs.reduce((s, c) => s + (Number.isInteger(c.applicants) ? c.applicants : 0), 0);
+    $('totElig').textContent = n0(te); $('totApps').textContent = n0(ta);
+    const errs = validate(cs, state.percent);
+    showErrors(errs);
+    if (errs.length) { $('ruleOut').textContent = ''; $('results').innerHTML = ''; lastResult = null; return; }
+    const pool = computeSeatPool(cs, state.percent, state.rounding);
+    const res = allocate(cs, pool.seats);
+    lastResult = { pool, res, colleges: cs, totalApplicants: ta };
+    const rw = { down: 'rounded down', nearest: 'rounded to nearest', up: 'rounded up' }[pool.rounding];
+    $('ruleOut').innerHTML = `${n0(pool.totalEligible)} eligible faculty × ${pool.percent}% = ${pool.exact.toFixed(2)}, ${rw} to <span class="big">${n0(pool.seats)}</span> ${plural(pool.seats, 'seat')}. Applicants: ${n0(ta)}.`;
+    $('results').innerHTML = renderResults(pool, res, cs, ta);
+  }
+
+  function statusCell(r) {
+    if (r.demandBefore === 0 && r.funded === 0) return '<span class="st none">No applicants</span>';
+    if (r.settled) return '<span class="st settled">Settled</span>';
+    return `<span class="st waiting">Waiting for ${r.demandAfter}</span>`;
+  }
+
+  function roundNarrative(rd, isFirst) {
+    const s = [];
+    const p = rd.rows;
+    if (isFirst) {
+      s.push(`All ${p.length} ${plural(p.length, 'college')} take part in round 1, including any with no applicants. The pool of ${n0(rd.pool)} ${plural(rd.pool, 'seat')} is divided in proportion to their ${n0(rd.totalEligible)} eligible faculty: each college's exact quota is ${n0(rd.pool)} × (eligible ÷ ${n0(rd.totalEligible)}).`);
+    } else {
+      s.push(`The ${n0(rd.pool)} ${plural(rd.pool, 'seat')} returned from round ${rd.round - 1} ${rd.pool === 1 ? 'is' : 'are'} divided among the ${p.length} ${plural(p.length, 'college')} that still ${p.length === 1 ? 'has' : 'have'} unfunded applicants (${list(p.map(r => esc(r.name)))}), in proportion to their ${n0(rd.totalEligible)} eligible faculty. Settled colleges do not take part.`);
+    }
+    if (rd.remainderSeats === 0) {
+      s.push(`The whole-number parts of the quotas add up to exactly ${n0(rd.wholeSum)}, so no extra seats need to be assigned.`);
+    } else {
+      const extras = rd.order.slice(0, rd.remainderSeats).map(r => `${esc(r.name)} (${n3(r.fraction)})`);
+      s.push(`The whole-number parts of the quotas account for ${n0(rd.wholeSum)} ${plural(rd.wholeSum, 'seat')}. The remaining ${n0(rd.remainderSeats)} ${rd.remainderSeats === 1 ? 'seat goes' : 'seats go one each'} to the ${rd.remainderSeats === 1 ? 'college' : 'colleges'} with the largest fractional parts: ${list(extras)}.`);
+      if (rd.ties.length) s.push(`Tie at the cutoff between ${list(rd.ties.map(esc))}, whose fractional parts are equal; the seat goes to the college with more eligible faculty, then by name.`);
+    }
+    if (rd.surplus === 0) {
+      s.push(`Every allocated seat has an applicant to fund, so nothing is returned to the pool.`);
+    } else {
+      const ret = p.filter(r => r.surplus > 0).map(r => `${esc(r.name)} (${r.surplus})`);
+      s.push(`Allocations are then matched to applicants. ${n0(rd.funded)} ${plural(rd.funded, 'seat funds', 'seats fund')} applicants; ${n0(rd.surplus)} ${plural(rd.surplus, 'seat exceeds', 'seats exceed')} the applicants in ${list(ret)} and ${rd.surplus === 1 ? 'is' : 'are'} returned to the pool.`);
+    }
+    if (rd.settledNow.length) s.push(`Settled after this round (every applicant funded, or no applicants): ${list(rd.settledNow.map(esc))}.`);
+    return s.map(x => `<p>${x}</p>`).join('');
+  }
+
+  function roundTable(rd) {
+    const rows = rd.rows.map(r => `<tr>
+      <td class="l">${esc(r.name)}</td>
+      <td>${n0(r.eligible)}</td>
+      <td>${pct(r.share)}</td>
+      <td>${n3(r.quota)}</td>
+      <td>${r.whole}</td>
+      <td>${n3(r.fraction)}</td>
+      <td>${r.rank}</td>
+      <td class="${r.remainderSeat ? 'extra' : ''}">${r.remainderSeat ? '+1' : ''}</td>
+      <td><strong>${r.allocated}</strong></td>
+      <td>${r.demandBefore}</td>
+      <td class="funded ${r.funded ? 'nz' : ''}">${r.funded}</td>
+      <td class="returned ${r.surplus ? 'nz' : ''}">${r.surplus}</td>
+      <td class="l">${statusCell(r)}</td>
+    </tr>`).join('');
+    const sum = k => rd.rows.reduce((s, r) => s + r[k], 0);
+    return `<div class="tablewrap"><table>
+      <thead><tr><th class="l">College</th><th>Eligible</th><th>Share of eligible</th><th>Exact quota</th><th>Whole seats</th><th>Fraction</th><th>Rank by fraction</th><th>Extra seat</th><th>Allocated</th><th>Applicants awaiting</th><th>Funded now</th><th>Returned to pool</th><th class="l">Status after round</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td class="l">Total</td><td>${n0(rd.totalEligible)}</td><td>100.0%</td><td>${n3(sum('quota'))}</td><td>${rd.wholeSum}</td><td></td><td></td><td>${rd.remainderSeats ? '+' + rd.remainderSeats : ''}</td><td>${rd.pool}</td><td>${sum('demandBefore')}</td><td>${rd.funded}</td><td>${rd.surplus}</td><td></td></tr></tfoot>
+    </table></div>`;
+  }
+
+  function renderResults(pool, res, cs, ta) {
+    const h = [];
+    /* seat flow */
+    h.push(`<h2>Where the seats went</h2>`);
+    const flow = [`<div class="box pool"><div class="n">${n0(pool.seats)}</div><div class="l">seats in the pool</div></div>`];
+    res.rounds.forEach(rd => {
+      flow.push(`<div class="arrow">→</div><div class="box"><div class="n">${n0(rd.funded)}</div><div class="l">funded in round ${rd.round}${rd.surplus ? `<br>${n0(rd.surplus)} returned` : ''}</div></div>`);
+    });
+    if (res.unallocated) flow.push(`<div class="arrow">→</div><div class="box unalloc"><div class="n">${n0(res.unallocated)}</div><div class="l">unallocated</div></div>`);
+    flow.push(`<div class="arrow">=</div><div class="box settled"><div class="n">${n0(res.totalAwarded)}</div><div class="l">seats awarded in total<br>${n0(ta - res.totalAwarded)} of ${n0(ta)} applicants unfunded</div></div>`);
+    h.push(`<div class="flow">${flow.join('')}</div>`);
+    h.push(`<p>${res.stopReason} ${res.rounds.length} ${plural(res.rounds.length, 'round was', 'rounds were')} needed.</p>`);
+    if (res.unallocated) h.push(`<div class="note warn">${n0(res.unallocated)} ${plural(res.unallocated, 'seat', 'seats')} left over: there are more seats than applicants campus-wide, so every applicant is funded and the remainder cannot be placed.</div>`);
+    if (ta > res.totalAwarded) h.push(`<div class="note">${n0(ta - res.totalAwarded)} ${plural(ta - res.totalAwarded, 'applicant is', 'applicants are')} unfunded because the pool is smaller than the number of applicants. The colleges concerned are marked in the final allocation below.</div>`);
+
+    /* final table */
+    h.push(`<h2>Final allocation</h2>`);
+    const shareSeats = f => res.totalAwarded ? pct(f.awarded / res.totalAwarded) : '';
+    h.push(`<div class="tablewrap"><table>
+      <thead><tr><th class="l">College</th><th>Eligible</th><th>Share of eligible</th><th>Applicants</th><th>Seats awarded</th><th>Share of seats</th><th class="l">Awarded by round</th><th>Unfunded applicants</th><th class="l">Outcome</th></tr></thead>
+      <tbody>${res.final.map(f => `<tr>
+        <td class="l">${esc(f.name)}</td><td>${n0(f.eligible)}</td><td>${pct(f.eligible / pool.totalEligible)}</td><td>${f.applicants}</td>
+        <td><strong>${f.awarded}</strong></td><td>${shareSeats(f)}</td>
+        <td class="l byround">${f.byRound.map(b => `round ${b.round}: ${b.seats}`).join(', ') || '—'}</td>
+        <td class="${f.unfunded ? 'returned nz' : ''}">${f.unfunded}</td>
+        <td class="l">${f.applicants === 0 ? '<span class="st none">No applicants</span>' : f.unfunded === 0 ? `<span class="st settled">All applicants funded</span> <span class="byround">(round ${f.settledIn})</span>` : `<span class="st waiting">${f.unfunded} unfunded</span>`}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr><td class="l">Total</td><td>${n0(pool.totalEligible)}</td><td>100.0%</td><td>${n0(ta)}</td><td>${n0(res.totalAwarded)}</td><td>${res.totalAwarded ? '100.0%' : ''}</td><td></td><td>${n0(ta - res.totalAwarded)}</td><td class="l">${res.unallocated ? n0(res.unallocated) + ' seats unallocated' : ''}</td></tr></tfoot>
+    </table></div>`);
+
+    /* rounds */
+    h.push(`<h2>Round by round</h2>`);
+    h.push(`<p>Each round divides a pool of seats among the colleges taking part. Columns read left to right in the order the calculation is done: quota, whole seats, extra seats by largest fraction, allocation, then matching to applicants.</p>`);
+    res.rounds.forEach((rd, i) => {
+      h.push(`<h3>Round ${rd.round}: ${n0(rd.pool)} ${plural(rd.pool, 'seat')} among ${rd.participants} ${plural(rd.participants, 'college')} with ${n0(rd.totalEligible)} eligible faculty</h3>`);
+      h.push(roundNarrative(rd, i === 0));
+      h.push(roundTable(rd));
+    });
+
+    /* record */
+    h.push(`<h2>Step-by-step record</h2>`);
+    h.push(`<p>Every arithmetic step, in order, for checking by hand or for the minutes.</p>`);
+    const rec = [];
+    rec.push(`<li class="head">Seat pool</li>`);
+    rec.push(`<li>Eligible faculty: ${cs.map(c => `${esc(c.name)} ${n0(c.eligible)}`).join('; ')}. Total ${n0(pool.totalEligible)}.</li>`);
+    rec.push(`<li>${n0(pool.totalEligible)} × ${pool.percent}% = ${pool.exact.toFixed(4)}; ${ { down: 'rounded down', nearest: 'rounded to nearest', up: 'rounded up' }[pool.rounding] } to ${n0(pool.seats)} ${plural(pool.seats, 'seat')}.</li>`);
+    rec.push(`<li>Applicants: ${cs.map(c => `${esc(c.name)} ${c.applicants}`).join('; ')}. Total ${n0(ta)}.</li>`);
+    res.rounds.forEach(rd => {
+      rec.push(`<li class="head">Round ${rd.round}</li>`);
+      rec.push(`<li>Pool: ${n0(rd.pool)}. Taking part: ${list(rd.rows.map(r => esc(r.name)))} (${n0(rd.totalEligible)} eligible).</li>`);
+      rd.rows.forEach(r => {
+        rec.push(`<li>${esc(r.name)}: ${n0(rd.pool)} × ${n0(r.eligible)} ÷ ${n0(rd.totalEligible)} = ${n3(r.quota)} → ${r.whole} whole${r.remainderSeat ? ` + 1 extra (fraction ${n3(r.fraction)}, rank ${r.rank} of ${rd.rows.length})` : ` (fraction ${n3(r.fraction)}, rank ${r.rank}, no extra seat)`} = ${r.allocated} allocated. Applicants awaiting ${r.demandBefore}; funded ${r.funded}; returned ${r.surplus}; ${r.settled ? 'settled' : `${r.demandAfter} still waiting`}.</li>`);
+      });
+      rec.push(`<li>Check: whole seats ${rd.wholeSum} + extra seats ${rd.remainderSeats} = ${rd.wholeSum + rd.remainderSeats} = pool ${rd.pool}. Funded ${rd.funded} + returned ${rd.surplus} = ${rd.funded + rd.surplus} = pool ${rd.pool}.</li>`);
+      if (rd.ties.length) rec.push(`<li>Tie at the cutoff between ${list(rd.ties.map(esc))}; resolved by more eligible faculty, then by name.</li>`);
+    });
+    rec.push(`<li class="head">Result</li>`);
+    rec.push(`<li>${res.stopReason}</li>`);
+    rec.push(`<li>Check: seats awarded ${n0(res.totalAwarded)} + unallocated ${n0(res.unallocated)} = ${n0(res.totalAwarded + res.unallocated)} = pool ${n0(pool.seats)}.</li>`);
+    h.push(`<details><summary>Show the record (${rec.filter(x => !x.startsWith('<li class="head"')).length} steps)</summary><ol class="record">${rec.join('')}</ol></details>`);
+    return h.join('');
+  }
+
+  renderInputs();
+})();
+</script>
+</body>
+</html>

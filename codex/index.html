@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Sabbatical Seat Allocation</title>
+  <style>
+    :root {
+      --ink: #182a3a;
+      --muted: #607080;
+      --navy: #113249;
+      --navy-2: #194963;
+      --teal: #087c72;
+      --teal-dark: #075f58;
+      --teal-soft: #e7f5f2;
+      --gold: #e8ad4a;
+      --gold-soft: #fff4dc;
+      --blue-soft: #eaf3f8;
+      --paper: #ffffff;
+      --canvas: #f3f1eb;
+      --line: #d8e0e2;
+      --line-dark: #b9c7cc;
+      --danger: #b53636;
+      --danger-soft: #fff0ef;
+      --success: #176b47;
+      --shadow: 0 18px 42px rgba(21, 45, 59, 0.09);
+      --radius: 18px;
+      --radius-small: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 5%, rgba(8, 124, 114, 0.09), transparent 25rem),
+        var(--canvas);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    button, input { font: inherit; }
+
+    button { cursor: pointer; }
+
+    button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible {
+      outline: 3px solid rgba(8, 124, 114, 0.28);
+      outline-offset: 3px;
+    }
+
+    .masthead {
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      background: linear-gradient(118deg, #0f2f44 0%, #164c60 72%, #087c72 145%);
+    }
+
+    .masthead::after {
+      content: "";
+      position: absolute;
+      width: 460px;
+      height: 460px;
+      right: -165px;
+      top: -285px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 50%;
+      box-shadow: 0 0 0 74px rgba(255,255,255,.035), 0 0 0 148px rgba(255,255,255,.025);
+    }
+
+    .masthead-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 30px 28px 78px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 46px;
+      font-size: .78rem;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.78);
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255,255,255,.34);
+      border-radius: 50%;
+      color: #fff;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.08rem;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: #8fd8d0;
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.45rem, 6vw, 4.45rem);
+      font-weight: 500;
+      line-height: .98;
+      letter-spacing: -.035em;
+    }
+
+    .dek {
+      max-width: 680px;
+      margin: 20px 0 0;
+      color: rgba(255,255,255,.77);
+      font-size: 1.05rem;
+    }
+
+    .page {
+      position: relative;
+      z-index: 2;
+      max-width: 1180px;
+      margin: -42px auto 0;
+      padding: 0 28px 64px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid rgba(24, 42, 58, .07);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .input-card { overflow: hidden; }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 28px 30px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .step-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 7px;
+      color: var(--teal-dark);
+      font-size: .75rem;
+      font-weight: 850;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .step-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 4px var(--teal-soft);
+    }
+
+    h2, h3 { color: var(--navy); }
+
+    h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -.02em;
+    }
+
+    .supporting {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+
+    .policy-chip {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 10px 14px;
+      color: var(--navy);
+      background: var(--gold-soft);
+      border: 1px solid #f2d697;
+      border-radius: 999px;
+      font-size: .82rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .policy-chip strong { color: #8c5b05; font-size: 1.05rem; }
+
+    .controls-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px 30px 18px;
+      background: #fbfcfb;
+    }
+
+    .count-group {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      color: #405362;
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .035em;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 11px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line-dark);
+      border-radius: 8px;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    input:hover { border-color: #8ea5ad; }
+
+    input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(8,124,114,.12);
+      outline: none;
+    }
+
+    input[aria-invalid="true"] {
+      border-color: var(--danger);
+      background: #fffafa;
+    }
+
+    #college-count { width: 112px; }
+
+    .button {
+      display: inline-flex;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 17px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      font-weight: 800;
+      line-height: 1;
+      transition: transform .12s ease, background .15s ease, border-color .15s ease;
+    }
+
+    .button:hover { transform: translateY(-1px); }
+    .button:active { transform: translateY(0); }
+
+    .button-primary {
+      color: #fff;
+      background: var(--teal);
+      box-shadow: 0 8px 18px rgba(8,124,114,.19);
+    }
+
+    .button-primary:hover { background: var(--teal-dark); }
+
+    .button-secondary {
+      color: var(--navy);
+      background: #fff;
+      border-color: var(--line-dark);
+    }
+
+    .button-ghost {
+      min-height: 36px;
+      padding: 7px 10px;
+      color: var(--muted);
+      background: transparent;
+      border-color: transparent;
+      font-size: .8rem;
+    }
+
+    .button-ghost:hover { color: var(--danger); background: var(--danger-soft); }
+
+    .button svg { width: 17px; height: 17px; }
+
+    .input-table-wrap { overflow-x: auto; padding: 0 30px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .input-table { min-width: 720px; }
+
+    th {
+      padding: 11px 12px;
+      color: #62737f;
+      border-bottom: 1px solid var(--line-dark);
+      font-size: .7rem;
+      font-weight: 850;
+      letter-spacing: .07em;
+      text-align: left;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 13px 12px;
+      border-bottom: 1px solid #e7ecec;
+      vertical-align: top;
+    }
+
+    .input-table tbody tr:last-child td { border-bottom: 0; }
+
+    .row-number {
+      width: 34px;
+      padding-top: 23px;
+      color: #87949d;
+      font-size: .78rem;
+      font-weight: 800;
+    }
+
+    .input-table .name-cell { width: 43%; }
+    .input-table .number-cell { width: 23%; }
+    .input-table .action-cell { width: 38px; padding-top: 16px; }
+
+    .mobile-label { display: none; }
+
+    .field-error {
+      min-height: 17px;
+      margin: 4px 0 -4px;
+      color: var(--danger);
+      font-size: .72rem;
+      line-height: 1.2;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 24px 30px 29px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfb;
+    }
+
+    .privacy-note {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0;
+      color: var(--muted);
+      font-size: .8rem;
+    }
+
+    .privacy-note svg { flex: 0 0 auto; color: var(--teal); }
+
+    .action-set { display: flex; gap: 10px; }
+
+    .error-summary {
+      margin: 22px 30px 0;
+      padding: 14px 16px;
+      color: #7f2626;
+      background: var(--danger-soft);
+      border: 1px solid #efc0bc;
+      border-left: 4px solid var(--danger);
+      border-radius: 8px;
+    }
+
+    .error-summary strong { display: block; margin-bottom: 3px; }
+    .error-summary ul { margin: 5px 0 0; padding-left: 20px; }
+
+    .method-panel {
+      margin-top: 18px;
+      overflow: hidden;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(17,50,73,.12);
+      border-radius: 13px;
+    }
+
+    .method-panel summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      color: var(--navy);
+      font-size: .88rem;
+      font-weight: 850;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    .method-panel summary::-webkit-details-marker { display: none; }
+
+    .summary-chevron { transition: transform .2s ease; }
+    details[open] > summary .summary-chevron { transform: rotate(180deg); }
+
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .method-item { padding: 20px; border-right: 1px solid var(--line); }
+    .method-item:last-child { border-right: 0; }
+    .method-item strong { display: block; margin-bottom: 6px; color: var(--navy); }
+    .method-item p { margin: 0; color: var(--muted); font-size: .84rem; }
+
+    .results { margin-top: 28px; }
+
+    .results[hidden] { display: none; }
+
+    .stale-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+      padding: 11px 14px;
+      color: #714d0c;
+      background: var(--gold-soft);
+      border: 1px solid #edd28f;
+      border-radius: 9px;
+      font-size: .84rem;
+      font-weight: 700;
+    }
+
+    .stale-notice[hidden] { display: none; }
+
+    .results-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+
+    .results-header h2 { font-size: 2.2rem; }
+
+    .results-actions { display: flex; gap: 9px; }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      min-height: 130px;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: none;
+    }
+
+    .metric-featured {
+      color: #fff;
+      background: var(--navy);
+      border-color: var(--navy);
+    }
+
+    .metric-label {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .metric-featured .metric-label { color: rgba(255,255,255,.65); }
+
+    .metric-value {
+      margin: 0;
+      color: var(--navy);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 2.45rem;
+      line-height: 1;
+    }
+
+    .metric-featured .metric-value { color: #fff; }
+
+    .metric-note { margin: 8px 0 0; color: var(--muted); font-size: .75rem; }
+    .metric-featured .metric-note { color: rgba(255,255,255,.66); }
+
+    .formula-card {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 16px;
+      padding: 22px 25px;
+      background: linear-gradient(90deg, #f6fbfa, #fff);
+      border: 1px solid #cae5e1;
+      border-radius: 14px;
+    }
+
+    .formula-step span {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: .7rem;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .formula-step strong { color: var(--navy); font-size: 1.03rem; }
+    .formula-symbol { color: var(--teal); font-size: 1.4rem; font-weight: 500; }
+
+    .result-card { overflow: hidden; box-shadow: none; }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 23px 25px 17px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head h3 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    .section-head p { margin: 3px 0 0; color: var(--muted); font-size: .82rem; }
+
+    .check-badge {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      color: var(--success);
+      background: #eaf6ef;
+      border-radius: 999px;
+      font-size: .74rem;
+      font-weight: 850;
+    }
+
+    .result-table-wrap { overflow-x: auto; }
+    .result-table { min-width: 760px; }
+    .result-table th { padding: 12px 16px; background: #f8faf9; }
+    .result-table td { padding: 15px 16px; }
+    .result-table .numeric { text-align: right; }
+    .college-name { color: var(--navy); font-weight: 800; }
+    .allocation-number { color: var(--teal-dark); font-size: 1.08rem; font-weight: 900; }
+
+    .status-pill {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-complete { color: #236044; background: #e9f5ee; }
+    .status-partial { color: #815a10; background: #fff3d8; }
+    .status-none { color: #667581; background: #edf1f2; }
+
+    .total-row td {
+      color: var(--navy);
+      background: #f7faf9;
+      border-top: 2px solid var(--line-dark);
+      font-weight: 900;
+    }
+
+    .rounds-section { margin-top: 16px; }
+
+    .round-card {
+      margin-top: 11px;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+    }
+
+    .round-card > summary {
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
+      gap: 15px;
+      padding: 17px 20px;
+      list-style: none;
+      cursor: pointer;
+    }
+
+    .round-card > summary::-webkit-details-marker { display: none; }
+
+    .round-number {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      color: #fff;
+      background: var(--navy);
+      border-radius: 50%;
+      font-size: .8rem;
+      font-weight: 900;
+    }
+
+    .round-title { display: block; color: var(--navy); font-weight: 850; }
+    .round-subtitle { color: var(--muted); font-size: .77rem; }
+
+    .round-pool {
+      color: var(--teal-dark);
+      font-size: .8rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .round-body { border-top: 1px solid var(--line); }
+
+    .round-explainer {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .round-stat { padding: 14px 17px; background: #f8faf9; }
+    .round-stat span { display: block; color: var(--muted); font-size: .67rem; font-weight: 800; text-transform: uppercase; }
+    .round-stat strong { display: block; margin-top: 2px; color: var(--navy); font-size: .97rem; }
+
+    .audit-wrap { overflow-x: auto; }
+    .audit-table { min-width: 1200px; }
+    .audit-table th { padding: 10px 11px; background: #fff; }
+    .audit-table td { padding: 12px 11px; font-size: .8rem; }
+    .audit-table .numeric { text-align: right; }
+
+    .quota-work { color: var(--navy); font-weight: 750; white-space: nowrap; }
+    .quota-work small { display: block; color: var(--muted); font-weight: 500; }
+    .bonus { color: var(--teal-dark); font-weight: 850; }
+    .rank { color: var(--muted); }
+
+    .round-note {
+      margin: 0;
+      padding: 13px 18px;
+      color: #526571;
+      background: var(--blue-soft);
+      border-top: 1px solid #d6e5ec;
+      font-size: .8rem;
+    }
+
+    .conclusion {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      margin-top: 16px;
+      padding: 18px 20px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--teal);
+      border-radius: 11px;
+    }
+
+    .conclusion-icon {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      color: var(--teal-dark);
+      background: var(--teal-soft);
+      border-radius: 50%;
+      font-weight: 900;
+    }
+
+    .conclusion strong { display: block; color: var(--navy); }
+    .conclusion p { margin: 2px 0 0; color: var(--muted); font-size: .84rem; }
+
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 28px 34px;
+      color: #6d7a82;
+      font-size: .75rem;
+    }
+
+    footer strong { color: var(--navy); }
+
+    .screen-reader-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    @media (max-width: 850px) {
+      .metric-grid { grid-template-columns: repeat(2, 1fr); }
+      .method-grid { grid-template-columns: 1fr; }
+      .method-item { border-right: 0; border-bottom: 1px solid var(--line); }
+      .method-item:last-child { border-bottom: 0; }
+      .formula-card { grid-template-columns: 1fr; gap: 8px; }
+      .formula-symbol { transform: rotate(90deg); justify-self: start; margin-left: 10px; }
+      .round-explainer { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .masthead-inner { padding: 24px 18px 68px; }
+      .brand { margin-bottom: 36px; }
+      .page { padding: 0 12px 48px; }
+      .card-head, .controls-row, .form-actions { padding-left: 18px; padding-right: 18px; }
+      .card-head, .controls-row, .form-actions, .results-header { align-items: stretch; flex-direction: column; }
+      .policy-chip { align-self: flex-start; }
+      .count-group { width: 100%; }
+      #college-count { flex: 1; }
+      .controls-row > .button { width: 100%; }
+      .input-table-wrap { overflow: visible; padding: 0 18px; }
+      .input-table, .input-table tbody, .input-table tr, .input-table td { display: block; min-width: 0; width: 100%; }
+      .input-table thead { display: none; }
+      .input-table tr { position: relative; padding: 16px 0; border-bottom: 1px solid var(--line); }
+      .input-table tbody tr:last-child { border-bottom: 0; }
+      .input-table td { padding: 5px 0; border: 0; }
+      .input-table .name-cell, .input-table .number-cell { width: 100%; }
+      .input-table .action-cell { position: absolute; top: 7px; right: 0; width: auto; padding: 0; }
+      .row-number { padding-top: 0 !important; }
+      .row-number::before { content: "College "; }
+      .mobile-label { display: block; }
+      .form-actions .action-set { flex-direction: column-reverse; }
+      .form-actions .button { width: 100%; }
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .metric { min-height: 112px; padding: 16px; }
+      .metric-value { font-size: 2rem; }
+      .results-actions { width: 100%; }
+      .results-actions .button { flex: 1; }
+      .round-card > summary { grid-template-columns: auto 1fr auto; }
+      .round-pool { grid-column: 2; grid-row: 2; }
+      .round-card > summary .summary-chevron { grid-column: 3; grid-row: 1 / span 2; }
+      footer { align-items: flex-start; flex-direction: column; padding: 0 18px 28px; }
+    }
+
+    @media print {
+      @page { margin: .55in; }
+      body { background: #fff; color: #000; font-size: 10pt; }
+      .masthead { color: #000; background: #fff; border-bottom: 2px solid #000; }
+      .masthead::after, .brand-mark, .input-card, .method-panel, .results-actions, .stale-notice, footer { display: none !important; }
+      .masthead-inner { max-width: none; padding: 0 0 18px; }
+      .brand { margin-bottom: 18px; color: #444; }
+      .eyebrow { color: #444; }
+      h1 { color: #000; font-size: 30pt; }
+      .dek { color: #444; }
+      .page { max-width: none; margin: 0; padding: 18px 0 0; }
+      .results { margin-top: 0; }
+      .card, .round-card { box-shadow: none; break-inside: avoid; }
+      .metric-featured { color: #000; background: #fff; border: 2px solid #000; }
+      .metric-featured .metric-label, .metric-featured .metric-value, .metric-featured .metric-note { color: #000; }
+      .round-card { break-inside: auto; }
+      .round-card > summary { list-style: none; }
+      .round-card > .round-body { display: block !important; }
+      details.round-card:not([open]) > .round-body { display: block; }
+      .audit-table { min-width: 0; font-size: 7.5pt; }
+      .audit-table th, .audit-table td { padding: 5px; }
+      .summary-chevron { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand"><span class="brand-mark">S</span> Academic Affairs · Committee Tool</div>
+      <p class="eyebrow">Transparent allocation worksheet</p>
+      <h1>Sabbatical seat allocation</h1>
+      <p class="dek">Turn eligible-faculty and applicant counts into a policy-compliant allocation—with every round and arithmetic step available for review.</p>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="card input-card" aria-labelledby="inputs-title">
+      <div class="card-head">
+        <div>
+          <p class="step-label"><span class="step-dot"></span> Step 1 · Enter counts</p>
+          <h2 id="inputs-title">College information</h2>
+          <p class="supporting">Use whole numbers. Applicants cannot exceed eligible faculty.</p>
+        </div>
+        <div class="policy-chip" title="Any fractional result is rounded up to the next whole seat.">
+          <strong>12%</strong> of eligible faculty · fractions round up
+        </div>
+      </div>
+
+      <form id="allocation-form" novalidate>
+        <div class="controls-row">
+          <div class="count-group">
+            <div>
+              <label for="college-count">Number of colleges</label>
+              <input id="college-count" name="collegeCount" type="number" min="1" step="1" inputmode="numeric" value="10">
+            </div>
+            <button class="button button-secondary" id="apply-count" type="button">Apply</button>
+          </div>
+          <button class="button button-secondary" id="reset-colleges" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset college list
+          </button>
+        </div>
+
+        <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden></div>
+
+        <div class="input-table-wrap">
+          <table class="input-table">
+            <thead>
+              <tr>
+                <th scope="col"><span class="screen-reader-only">Row</span></th>
+                <th scope="col">College name</th>
+                <th scope="col">Eligible faculty</th>
+                <th scope="col">Applicants</th>
+                <th scope="col"><span class="screen-reader-only">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody id="college-rows"></tbody>
+          </table>
+        </div>
+
+        <div class="form-actions">
+          <p class="privacy-note">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+            Runs entirely on this device. Nothing is uploaded or saved.
+          </p>
+          <div class="action-set">
+            <button class="button button-secondary" id="add-college" type="button">+ Add college</button>
+            <button class="button button-primary" type="submit">
+              Calculate allocation
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <details class="method-panel">
+      <summary>
+        <span>Policy choices used by this calculator</span>
+        <svg class="summary-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <div class="method-grid">
+        <div class="method-item">
+          <strong>Available seats</strong>
+          <p>Total eligible faculty × 12%, with any fractional result rounded up to the next whole seat.</p>
+        </div>
+        <div class="method-item">
+          <strong>Hamilton tie-break</strong>
+          <p>If fractional remainders tie: more eligible faculty first, then college name A–Z (case-insensitive), then entry order.</p>
+        </div>
+        <div class="method-item">
+          <strong>Returned seats</strong>
+          <p>Seats above a college’s unfunded applicant count return to the pool and are reallocated only among colleges with remaining applicants.</p>
+        </div>
+      </div>
+    </details>
+
+    <section id="results" class="results" aria-labelledby="results-title" aria-live="polite" hidden>
+      <div id="stale-notice" class="stale-notice" hidden>
+        <span>Inputs have changed. Recalculate to refresh these results.</span>
+        <button class="button button-ghost" type="button" id="recalculate">Recalculate now</button>
+      </div>
+
+      <div class="results-header">
+        <div>
+          <p class="step-label"><span class="step-dot"></span> Step 2 · Review allocation</p>
+          <h2 id="results-title">Allocation result</h2>
+          <p class="supporting" id="result-summary"></p>
+        </div>
+        <div class="results-actions">
+          <button class="button button-secondary" id="edit-inputs" type="button">Edit inputs</button>
+          <button class="button button-secondary" id="print-results" type="button">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+            Print report
+          </button>
+        </div>
+      </div>
+
+      <div class="metric-grid" id="metrics"></div>
+
+      <div class="formula-card" id="seat-formula" aria-label="Available seat calculation"></div>
+
+      <section class="card result-card" aria-labelledby="final-allocation-title">
+        <div class="section-head">
+          <div>
+            <h3 id="final-allocation-title">Final allocation by college</h3>
+            <p>After applicant limits and all redistribution rounds.</p>
+          </div>
+          <span class="check-badge" id="allocation-check"></span>
+        </div>
+        <div class="result-table-wrap" id="final-table"></div>
+      </section>
+
+      <section class="rounds-section" aria-labelledby="rounds-title">
+        <div class="section-head card">
+          <div>
+            <h3 id="rounds-title">Calculation audit trail</h3>
+            <p>Open any round to verify the Hamilton quotas and capacity adjustments.</p>
+          </div>
+        </div>
+        <div id="rounds"></div>
+      </section>
+
+      <div class="conclusion" id="conclusion"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span><strong>Sabbatical Seat Allocation</strong> · Offline committee worksheet</span>
+    <span>Hamilton largest-remainder method · No data leaves this page</span>
+  </footer>
+
+  <script id="allocation-core">
+  (function (root) {
+    "use strict";
+
+    const MAX_SAFE = Number.MAX_SAFE_INTEGER;
+
+    function compareNames(a, b) {
+      const left = a.normalize("NFKD").toLocaleLowerCase("en-US");
+      const right = b.normalize("NFKD").toLocaleLowerCase("en-US");
+      if (left < right) return -1;
+      if (left > right) return 1;
+      return 0;
+    }
+
+    function calculateAvailableSeats(totalEligible) {
+      if (!Number.isSafeInteger(totalEligible) || totalEligible < 0) {
+        throw new Error("Total eligible faculty must be a non-negative whole number.");
+      }
+      if (totalEligible > Math.floor((MAX_SAFE - 99) / 12)) {
+        throw new Error("The eligible-faculty total is too large to calculate safely.");
+      }
+      return Math.floor((totalEligible * 12 + 99) / 100);
+    }
+
+    function hamilton(colleges, participantIndexes, pool) {
+      if (!Number.isSafeInteger(pool) || pool < 0) {
+        throw new Error("The seat pool must be a non-negative whole number.");
+      }
+
+      const totalWeight = participantIndexes.reduce(function (sum, index) {
+        return sum + colleges[index].eligible;
+      }, 0);
+
+      const records = participantIndexes.map(function (index) {
+        const college = colleges[index];
+        if (pool === 0 || totalWeight === 0) {
+          return {
+            index: index,
+            numerator: 0,
+            denominator: totalWeight,
+            base: 0,
+            remainderNumerator: 0,
+            rank: null,
+            bonus: 0,
+            offered: 0
+          };
+        }
+        if (college.eligible !== 0 && pool > Math.floor(MAX_SAFE / college.eligible)) {
+          throw new Error("The input counts are too large to calculate Hamilton quotas safely.");
+        }
+        const numerator = pool * college.eligible;
+        const base = Math.floor(numerator / totalWeight);
+        return {
+          index: index,
+          numerator: numerator,
+          denominator: totalWeight,
+          base: base,
+          remainderNumerator: numerator % totalWeight,
+          rank: null,
+          bonus: 0,
+          offered: base
+        };
+      });
+
+      const baseTotal = records.reduce(function (sum, record) { return sum + record.base; }, 0);
+      const remainderSeats = pool - baseTotal;
+
+      const ranked = records.slice().sort(function (a, b) {
+        if (a.remainderNumerator !== b.remainderNumerator) {
+          return b.remainderNumerator - a.remainderNumerator;
+        }
+        const eligibleDifference = colleges[b.index].eligible - colleges[a.index].eligible;
+        if (eligibleDifference !== 0) return eligibleDifference;
+        const nameDifference = compareNames(colleges[a.index].name, colleges[b.index].name);
+        if (nameDifference !== 0) return nameDifference;
+        return a.index - b.index;
+      });
+
+      ranked.forEach(function (record, position) { record.rank = position + 1; });
+      for (let position = 0; position < remainderSeats; position += 1) {
+        ranked[position].bonus = 1;
+        ranked[position].offered += 1;
+      }
+
+      return {
+        totalWeight: totalWeight,
+        baseTotal: baseTotal,
+        remainderSeats: remainderSeats,
+        records: records
+      };
+    }
+
+    function validateColleges(colleges) {
+      if (!Array.isArray(colleges) || colleges.length === 0) {
+        throw new Error("At least one college is required.");
+      }
+      let eligibleTotal = 0;
+      colleges.forEach(function (college, index) {
+        if (!college || typeof college.name !== "string" || college.name.trim() === "") {
+          throw new Error("College " + (index + 1) + " needs a name.");
+        }
+        ["eligible", "applicants"].forEach(function (field) {
+          if (!Number.isSafeInteger(college[field]) || college[field] < 0) {
+            throw new Error(college.name + " has an invalid " + field + " count.");
+          }
+        });
+        if (college.applicants > college.eligible) {
+          throw new Error(college.name + " has more applicants than eligible faculty.");
+        }
+        if (eligibleTotal > MAX_SAFE - college.eligible) {
+          throw new Error("The eligible-faculty total is too large to calculate safely.");
+        }
+        eligibleTotal += college.eligible;
+      });
+      return eligibleTotal;
+    }
+
+    function allocate(collegeInput) {
+      const colleges = collegeInput.map(function (college) {
+        return {
+          name: college.name.trim(),
+          eligible: college.eligible,
+          applicants: college.applicants
+        };
+      });
+      const totalEligible = validateColleges(colleges);
+      const totalApplicants = colleges.reduce(function (sum, college) { return sum + college.applicants; }, 0);
+      const availableSeats = calculateAvailableSeats(totalEligible);
+      const remainingApplicants = colleges.map(function (college) { return college.applicants; });
+      const allocations = colleges.map(function () { return 0; });
+      const rounds = [];
+      let pool = availableSeats;
+      let roundNumber = 1;
+
+      while (true) {
+        const participantIndexes = roundNumber === 1
+          ? colleges.map(function (_, index) { return index; })
+          : colleges.map(function (_, index) { return index; }).filter(function (index) {
+              return remainingApplicants[index] > 0;
+            });
+
+        if (participantIndexes.length === 0) break;
+
+        const distribution = hamilton(colleges, participantIndexes, pool);
+        let returnedSeats = 0;
+        let fundedThisRound = 0;
+
+        const recordByIndex = new Map(distribution.records.map(function (record) {
+          return [record.index, record];
+        }));
+
+        const records = participantIndexes.map(function (index) {
+          const hamiltonRecord = recordByIndex.get(index);
+          const applicantsBefore = remainingApplicants[index];
+          const funded = Math.min(hamiltonRecord.offered, applicantsBefore);
+          const returned = hamiltonRecord.offered - funded;
+          remainingApplicants[index] -= funded;
+          allocations[index] += funded;
+          fundedThisRound += funded;
+          returnedSeats += returned;
+          return Object.assign({}, hamiltonRecord, {
+            applicantsBefore: applicantsBefore,
+            funded: funded,
+            returned: returned,
+            applicantsAfter: remainingApplicants[index]
+          });
+        });
+
+        rounds.push({
+          number: roundNumber,
+          pool: pool,
+          participantIndexes: participantIndexes,
+          totalWeight: distribution.totalWeight,
+          baseTotal: distribution.baseTotal,
+          remainderSeats: distribution.remainderSeats,
+          funded: fundedThisRound,
+          returned: returnedSeats,
+          records: records
+        });
+
+        pool = returnedSeats;
+        if (pool === 0) break;
+        if (!remainingApplicants.some(function (remaining) { return remaining > 0; })) break;
+        roundNumber += 1;
+      }
+
+      const allocatedSeats = allocations.reduce(function (sum, value) { return sum + value; }, 0);
+      return {
+        colleges: colleges,
+        totalEligible: totalEligible,
+        totalApplicants: totalApplicants,
+        availableSeats: availableSeats,
+        allocatedSeats: allocatedSeats,
+        unallocatedSeats: availableSeats - allocatedSeats,
+        allocations: allocations,
+        remainingApplicants: remainingApplicants,
+        rounds: rounds
+      };
+    }
+
+    root.SabbaticalCalculatorCore = Object.freeze({
+      allocate: allocate,
+      calculateAvailableSeats: calculateAvailableSeats,
+      hamilton: hamilton
+    });
+  }(typeof window !== "undefined" ? window : globalThis));
+  </script>
+
+  <script>
+  (function () {
+    "use strict";
+
+    const core = window.SabbaticalCalculatorCore;
+    const form = document.getElementById("allocation-form");
+    const rowContainer = document.getElementById("college-rows");
+    const countInput = document.getElementById("college-count");
+    const resultsSection = document.getElementById("results");
+    const staleNotice = document.getElementById("stale-notice");
+    const errorSummary = document.getElementById("error-summary");
+    const defaultColleges = Object.freeze([
+      { name: "Andrew J. Anagnost College of Engineering and Computer Science", eligible: 0, applicants: 0 },
+      { name: "Health & Human Development", eligible: 0, applicants: 0 },
+      { name: "Humanities", eligible: 0, applicants: 0 },
+      { name: "Counseling", eligible: 0, applicants: 0 },
+      { name: "Social & Behavioral Sciences", eligible: 0, applicants: 0 },
+      { name: "Science & Mathematics", eligible: 0, applicants: 0 },
+      { name: "David Nazarian College of Business & Economics", eligible: 0, applicants: 0 },
+      { name: "Library", eligible: 0, applicants: 0 },
+      { name: "Mike Curb College of Arts, Media, & Communication", eligible: 0, applicants: 0 },
+      { name: "Michael D. Eisner College of Education", eligible: 0, applicants: 0 }
+    ]);
+    let hasResults = false;
+
+    const icons = {
+      check: '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>',
+      chevron: '<svg class="summary-chevron" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>'
+    };
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function plural(number, singular, pluralForm) {
+      return number.toLocaleString() + " " + (number === 1 ? singular : (pluralForm || singular + "s"));
+    }
+
+    function formatDecimal(value, digits) {
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits
+      });
+    }
+
+    function createRow(index, values) {
+      const row = document.createElement("tr");
+      row.dataset.index = index;
+      const name = values && values.name !== undefined ? values.name : "College " + (index + 1);
+      const eligible = values && values.eligible !== undefined ? values.eligible : 0;
+      const applicants = values && values.applicants !== undefined ? values.applicants : 0;
+      row.innerHTML =
+        '<td class="row-number" aria-hidden="true">' + (index + 1) + '</td>' +
+        '<td class="name-cell"><label class="mobile-label" for="name-' + index + '">College name</label><input id="name-' + index + '" data-field="name" type="text" maxlength="120" value="' + escapeHtml(name) + '" aria-describedby="name-error-' + index + '"><p class="field-error" id="name-error-' + index + '"></p></td>' +
+        '<td class="number-cell"><label class="mobile-label" for="eligible-' + index + '">Eligible faculty</label><input id="eligible-' + index + '" data-field="eligible" type="number" min="0" step="1" inputmode="numeric" value="' + escapeHtml(eligible) + '" aria-describedby="eligible-error-' + index + '"><p class="field-error" id="eligible-error-' + index + '"></p></td>' +
+        '<td class="number-cell"><label class="mobile-label" for="applicants-' + index + '">Applicants</label><input id="applicants-' + index + '" data-field="applicants" type="number" min="0" step="1" inputmode="numeric" value="' + escapeHtml(applicants) + '" aria-describedby="applicants-error-' + index + '"><p class="field-error" id="applicants-error-' + index + '"></p></td>' +
+        '<td class="action-cell"><button class="button button-ghost remove-row" type="button" aria-label="Remove ' + escapeHtml(name) + '" title="Remove college">' +
+        '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m4 4v7m6-7v7"/></svg></button></td>';
+      return row;
+    }
+
+    function snapshotRows() {
+      return Array.from(rowContainer.querySelectorAll("tr")).map(function (row) {
+        return {
+          name: row.querySelector('[data-field="name"]').value,
+          eligible: row.querySelector('[data-field="eligible"]').value,
+          applicants: row.querySelector('[data-field="applicants"]').value
+        };
+      });
+    }
+
+    function renderRows(count, values) {
+      const fragment = document.createDocumentFragment();
+      for (let index = 0; index < count; index += 1) {
+        fragment.appendChild(createRow(index, values && values[index]));
+      }
+      rowContainer.replaceChildren(fragment);
+      countInput.value = count;
+    }
+
+    function reindexRows() {
+      const rows = Array.from(rowContainer.querySelectorAll("tr"));
+      rows.forEach(function (row, index) {
+        row.dataset.index = index;
+        row.querySelector(".row-number").textContent = index + 1;
+        const nameValue = row.querySelector('[data-field="name"]').value || "college " + (index + 1);
+        row.querySelector(".remove-row").setAttribute("aria-label", "Remove " + nameValue);
+      });
+      countInput.value = rows.length;
+    }
+
+    function markStale() {
+      if (hasResults) staleNotice.hidden = false;
+    }
+
+    function applyCount() {
+      clearErrors();
+      const raw = countInput.value.trim();
+      const requested = Number(raw);
+      if (raw === "" || !Number.isSafeInteger(requested) || requested < 1) {
+        showGeneralErrors(["Number of colleges must be a whole number of at least 1."]);
+        countInput.setAttribute("aria-invalid", "true");
+        return;
+      }
+      countInput.removeAttribute("aria-invalid");
+      const existing = snapshotRows();
+      renderRows(requested, existing);
+      markStale();
+    }
+
+    function clearErrors() {
+      errorSummary.hidden = true;
+      errorSummary.innerHTML = "";
+      form.querySelectorAll('[aria-invalid="true"]').forEach(function (input) {
+        input.removeAttribute("aria-invalid");
+      });
+      form.querySelectorAll(".field-error").forEach(function (element) { element.textContent = ""; });
+    }
+
+    function setFieldError(input, message) {
+      input.setAttribute("aria-invalid", "true");
+      const error = document.getElementById(input.getAttribute("aria-describedby"));
+      if (error) error.textContent = message;
+    }
+
+    function showGeneralErrors(errors) {
+      errorSummary.innerHTML = "<strong>Please correct the following:</strong><ul>" + errors.map(function (error) {
+        return "<li>" + escapeHtml(error) + "</li>";
+      }).join("") + "</ul>";
+      errorSummary.hidden = false;
+    }
+
+    function parseInputs() {
+      clearErrors();
+      const errors = [];
+      const rows = Array.from(rowContainer.querySelectorAll("tr"));
+      const seenNames = new Map();
+      let firstInvalid = null;
+      let runningEligible = 0;
+
+      if (rows.length === 0) {
+        errors.push("Add at least one college.");
+      }
+
+      const colleges = rows.map(function (row, index) {
+        const nameInput = row.querySelector('[data-field="name"]');
+        const eligibleInput = row.querySelector('[data-field="eligible"]');
+        const applicantsInput = row.querySelector('[data-field="applicants"]');
+        const name = nameInput.value.trim();
+        const eligibleText = eligibleInput.value.trim();
+        const applicantsText = applicantsInput.value.trim();
+        const eligible = Number(eligibleText);
+        const applicants = Number(applicantsText);
+
+        if (!name) {
+          setFieldError(nameInput, "Enter a name.");
+          errors.push("College " + (index + 1) + " needs a name.");
+          firstInvalid = firstInvalid || nameInput;
+        } else {
+          const key = name.toLocaleLowerCase("en-US");
+          if (seenNames.has(key)) {
+            setFieldError(nameInput, "Use a unique name.");
+            const firstInput = seenNames.get(key);
+            setFieldError(firstInput, "Use a unique name.");
+            errors.push('College name "' + name + '" is used more than once.');
+            firstInvalid = firstInvalid || nameInput;
+          } else {
+            seenNames.set(key, nameInput);
+          }
+        }
+
+        if (eligibleText === "" || !Number.isSafeInteger(eligible) || eligible < 0) {
+          setFieldError(eligibleInput, "Enter a whole number of 0 or more.");
+          errors.push((name || "College " + (index + 1)) + ": eligible faculty must be a whole number of 0 or more.");
+          firstInvalid = firstInvalid || eligibleInput;
+        } else if (runningEligible > Number.MAX_SAFE_INTEGER - eligible) {
+          setFieldError(eligibleInput, "This makes the total too large.");
+          errors.push("The eligible-faculty total is too large to calculate safely.");
+          firstInvalid = firstInvalid || eligibleInput;
+        } else {
+          runningEligible += eligible;
+        }
+
+        if (applicantsText === "" || !Number.isSafeInteger(applicants) || applicants < 0) {
+          setFieldError(applicantsInput, "Enter a whole number of 0 or more.");
+          errors.push((name || "College " + (index + 1)) + ": applicants must be a whole number of 0 or more.");
+          firstInvalid = firstInvalid || applicantsInput;
+        } else if (Number.isSafeInteger(eligible) && eligible >= 0 && applicants > eligible) {
+          setFieldError(applicantsInput, "Cannot exceed eligible faculty.");
+          errors.push((name || "College " + (index + 1)) + ": applicants cannot exceed eligible faculty.");
+          firstInvalid = firstInvalid || applicantsInput;
+        }
+
+        return { name: name, eligible: eligible, applicants: applicants };
+      });
+
+      if (runningEligible > Math.floor((Number.MAX_SAFE_INTEGER - 99) / 12)) {
+        errors.push("The eligible-faculty total is too large to calculate safely.");
+      }
+
+      if (errors.length) {
+        showGeneralErrors(Array.from(new Set(errors)));
+        if (firstInvalid) firstInvalid.focus();
+        else errorSummary.focus();
+        return null;
+      }
+      return colleges;
+    }
+
+    function metric(label, value, note, featured) {
+      return '<article class="card metric' + (featured ? " metric-featured" : "") + '">' +
+        '<p class="metric-label">' + escapeHtml(label) + '</p>' +
+        '<p class="metric-value">' + escapeHtml(value) + '</p>' +
+        '<p class="metric-note">' + escapeHtml(note) + '</p></article>';
+    }
+
+    function renderFinalTable(result) {
+      const body = result.colleges.map(function (college, index) {
+        const allocation = result.allocations[index];
+        const remaining = result.remainingApplicants[index];
+        let statusClass = "status-none";
+        let statusText = college.applicants === 0 ? "No applicants" : "Not funded";
+        if (college.applicants > 0 && remaining === 0) {
+          statusClass = "status-complete";
+          statusText = "All funded";
+        } else if (allocation > 0) {
+          statusClass = "status-partial";
+          statusText = "Partly funded";
+        }
+        return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
+          '<td class="numeric">' + college.eligible.toLocaleString() + '</td>' +
+          '<td class="numeric">' + college.applicants.toLocaleString() + '</td>' +
+          '<td class="numeric allocation-number">' + allocation.toLocaleString() + '</td>' +
+          '<td class="numeric">' + remaining.toLocaleString() + '</td>' +
+          '<td><span class="status-pill ' + statusClass + '">' + statusText + '</span></td></tr>';
+      }).join("");
+
+      document.getElementById("final-table").innerHTML =
+        '<table class="result-table"><thead><tr><th scope="col">College</th><th class="numeric" scope="col">Eligible</th><th class="numeric" scope="col">Applicants</th><th class="numeric" scope="col">Final seats</th><th class="numeric" scope="col">Unfunded</th><th scope="col">Outcome</th></tr></thead>' +
+        '<tbody>' + body + '<tr class="total-row"><td>Total</td><td class="numeric">' + result.totalEligible.toLocaleString() + '</td><td class="numeric">' + result.totalApplicants.toLocaleString() + '</td><td class="numeric">' + result.allocatedSeats.toLocaleString() + '</td><td class="numeric">' + result.remainingApplicants.reduce(function (a, b) { return a + b; }, 0).toLocaleString() + '</td><td></td></tr></tbody></table>';
+    }
+
+    function exactQuota(record, round, college) {
+      if (round.pool === 0) {
+        return '<span class="quota-work">0<small>No seats in pool</small></span>';
+      }
+      if (round.totalWeight === 0) {
+        return '<span class="quota-work">0<small>No eligible faculty</small></span>';
+      }
+      const quota = record.numerator / record.denominator;
+      return '<span class="quota-work">(' + round.pool.toLocaleString() + ' × ' + college.eligible.toLocaleString() + ') ÷ ' + round.totalWeight.toLocaleString() +
+        '<small>= ' + formatDecimal(quota, 4) + '</small></span>';
+    }
+
+    function fractionalPart(record, round) {
+      if (!round.totalWeight || !round.pool) return "0.0000";
+      return formatDecimal(record.remainderNumerator / record.denominator, 4);
+    }
+
+    function roundNarrative(round, result) {
+      if (round.pool === 0) return "The available-seat calculation produced 0 seats, so no assignment was possible.";
+      if (round.totalWeight === 0) return "All participating colleges had 0 eligible faculty; there was no proportional basis for an assignment.";
+      if (round.returned === 0) return "Every Hamilton seat offered in this round was usable; no seats returned to the pool.";
+      const stillActive = round.records.some(function (record) { return record.applicantsAfter > 0; });
+      if (!stillActive) return plural(round.returned, "seat") + " returned, but no college had an unfunded applicant remaining. The returned " + (round.returned === 1 ? "seat is" : "seats are") + " unallocated.";
+      return plural(round.returned, "seat") + " exceeded the receiving colleges’ remaining applicants and returned to the pool for the next round.";
+    }
+
+    function renderRounds(result) {
+      const html = result.rounds.map(function (round, roundIndex) {
+        const recordRows = round.records.map(function (record) {
+          const college = result.colleges[record.index];
+          const rankText = record.rank === null ? "—" : "#" + record.rank;
+          const bonusText = record.bonus ? '<span class="bonus">+1 remainder seat</span>' : "—";
+          return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
+            '<td class="numeric">' + college.eligible.toLocaleString() + '</td>' +
+            '<td>' + exactQuota(record, round, college) + '</td>' +
+            '<td class="numeric">' + record.base.toLocaleString() + '</td>' +
+            '<td class="numeric">' + fractionalPart(record, round) + '</td>' +
+            '<td class="numeric rank">' + rankText + '</td>' +
+            '<td>' + bonusText + '</td>' +
+            '<td class="numeric"><strong>' + record.offered.toLocaleString() + '</strong></td>' +
+            '<td class="numeric">' + record.applicantsBefore.toLocaleString() + '</td>' +
+            '<td class="numeric bonus">' + record.funded.toLocaleString() + '</td>' +
+            '<td class="numeric">' + record.returned.toLocaleString() + '</td>' +
+            '<td class="numeric">' + record.applicantsAfter.toLocaleString() + '</td></tr>';
+        }).join("");
+
+        const title = round.number === 1 ? "Initial allocation" : "Redistribution";
+        const subtitle = round.number === 1
+          ? "Every college participates, including those with no applicants."
+          : "Only colleges with unfunded applicants participate.";
+        return '<details class="round-card"' + (roundIndex === 0 ? " open" : "") + '><summary>' +
+          '<span class="round-number">' + round.number + '</span><span><span class="round-title">Round ' + round.number + ' · ' + title + '</span><span class="round-subtitle">' + subtitle + '</span></span>' +
+          '<span class="round-pool">' + plural(round.pool, "seat") + ' in pool</span>' + icons.chevron + '</summary>' +
+          '<div class="round-body"><div class="round-explainer">' +
+            '<div class="round-stat"><span>Participating colleges</span><strong>' + round.participantIndexes.length.toLocaleString() + '</strong></div>' +
+            '<div class="round-stat"><span>Participating eligible</span><strong>' + round.totalWeight.toLocaleString() + '</strong></div>' +
+            '<div class="round-stat"><span>Sum of quota floors</span><strong>' + round.baseTotal.toLocaleString() + '</strong></div>' +
+            '<div class="round-stat"><span>Remainder seats</span><strong>' + round.remainderSeats.toLocaleString() + '</strong></div>' +
+          '</div><div class="audit-wrap"><table class="audit-table"><thead><tr>' +
+            '<th scope="col">College</th><th class="numeric" scope="col">Eligible</th><th scope="col">Exact quota arithmetic</th><th class="numeric" scope="col">Floor</th><th class="numeric" scope="col">Fraction</th><th class="numeric" scope="col">Tie order</th><th scope="col">Remainder award</th><th class="numeric" scope="col">Hamilton offer</th><th class="numeric" scope="col">Applicants before</th><th class="numeric" scope="col">Funded</th><th class="numeric" scope="col">Returned</th><th class="numeric" scope="col">Unfunded after</th>' +
+          '</tr></thead><tbody>' + recordRows + '</tbody></table></div>' +
+          '<p class="round-note"><strong>Round check:</strong> floors (' + round.baseTotal.toLocaleString() + ') + remainder seats (' + round.remainderSeats.toLocaleString() + ') = pool (' + round.pool.toLocaleString() + '). Funded (' + round.funded.toLocaleString() + ') + returned (' + round.returned.toLocaleString() + ') = pool (' + round.pool.toLocaleString() + '). ' + escapeHtml(roundNarrative(round, result)) + '</p></div></details>';
+      }).join("");
+      document.getElementById("rounds").innerHTML = html;
+    }
+
+    function renderResult(result) {
+      const percentExact = result.totalEligible * 12 / 100;
+      const unfunded = result.remainingApplicants.reduce(function (a, b) { return a + b; }, 0);
+      document.getElementById("result-summary").textContent = result.availableSeats === 0
+        ? "No seats were available under the 12% rule."
+        : plural(result.allocatedSeats, "seat") + " awarded across " + plural(result.colleges.length, "college") + ".";
+
+      document.getElementById("metrics").innerHTML =
+        metric("Seats available", result.availableSeats.toLocaleString(), "12% rule, rounded up", true) +
+        metric("Seats awarded", result.allocatedSeats.toLocaleString(), "Within applicant limits", false) +
+        metric("Unallocated", result.unallocatedSeats.toLocaleString(), result.unallocatedSeats ? "Demand was exhausted" : "Entire pool assigned", false) +
+        metric("Allocation rounds", result.rounds.length.toLocaleString(), result.rounds.length === 1 ? "Initial round only" : "Includes redistribution", false);
+
+      document.getElementById("seat-formula").innerHTML =
+        '<div class="formula-step"><span>Total eligible faculty</span><strong>' + result.totalEligible.toLocaleString() + '</strong></div>' +
+        '<span class="formula-symbol" aria-hidden="true">×</span>' +
+        '<div class="formula-step"><span>Policy rate</span><strong>12% = 0.12</strong></div>' +
+        '<span class="formula-symbol" aria-hidden="true">→</span>' +
+        '<div class="formula-step"><span>Exact then rounded up</span><strong>' + formatDecimal(percentExact, 2) + ' → ' + result.availableSeats.toLocaleString() + ' seats</strong></div>';
+
+      renderFinalTable(result);
+      renderRounds(result);
+
+      document.getElementById("allocation-check").innerHTML = icons.check + " " + result.allocatedSeats.toLocaleString() + " awarded + " + result.unallocatedSeats.toLocaleString() + " unallocated = " + result.availableSeats.toLocaleString() + " available";
+
+      let conclusionTitle;
+      let conclusionText;
+      if (result.availableSeats === 0) {
+        conclusionTitle = "The calculation ends with no available seats.";
+        conclusionText = "Twelve percent of " + result.totalEligible.toLocaleString() + " eligible faculty rounds to 0. No seats can be awarded.";
+      } else if (result.unallocatedSeats > 0) {
+        conclusionTitle = plural(result.unallocatedSeats, "seat") + " remain unallocated.";
+        conclusionText = "All " + result.totalApplicants.toLocaleString() + " applicants were funded before the available pool was exhausted. Policy prevents assigning the remaining " + (result.unallocatedSeats === 1 ? "seat" : "seats") + " without an unfunded applicant.";
+      } else if (unfunded > 0) {
+        conclusionTitle = "The full seat pool was allocated.";
+        conclusionText = plural(result.availableSeats, "seat") + " were assigned. " + plural(unfunded, "applicant") + " remain unfunded because no seats remain to distribute.";
+      } else {
+        conclusionTitle = "The full seat pool was allocated and every applicant was funded.";
+        conclusionText = plural(result.availableSeats, "seat") + " were assigned with no seats or applicants remaining.";
+      }
+      document.getElementById("conclusion").innerHTML = '<span class="conclusion-icon">✓</span><div><strong>' + escapeHtml(conclusionTitle) + '</strong><p>' + escapeHtml(conclusionText) + '</p></div>';
+
+      resultsSection.hidden = false;
+      staleNotice.hidden = true;
+      hasResults = true;
+    }
+
+    function calculate(event) {
+      if (event) event.preventDefault();
+      const colleges = parseInputs();
+      if (!colleges) return;
+      try {
+        renderResult(core.allocate(colleges));
+        resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (error) {
+        showGeneralErrors([error.message || "The allocation could not be calculated."]);
+        errorSummary.focus();
+      }
+    }
+
+    document.getElementById("apply-count").addEventListener("click", applyCount);
+    countInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applyCount();
+      }
+    });
+
+    document.getElementById("add-college").addEventListener("click", function () {
+      const values = snapshotRows();
+      values.push({ name: "College " + (values.length + 1), eligible: 0, applicants: 0 });
+      renderRows(values.length, values);
+      rowContainer.querySelector("tr:last-child [data-field=\"name\"]").select();
+      markStale();
+    });
+
+    rowContainer.addEventListener("click", function (event) {
+      const button = event.target.closest(".remove-row");
+      if (!button) return;
+      if (rowContainer.children.length === 1) {
+        showGeneralErrors(["At least one college is required."]);
+        return;
+      }
+      button.closest("tr").remove();
+      reindexRows();
+      markStale();
+    });
+
+    form.addEventListener("input", function (event) {
+      if (event.target.matches('[data-field="name"]')) {
+        const button = event.target.closest("tr").querySelector(".remove-row");
+        button.setAttribute("aria-label", "Remove " + (event.target.value || "college"));
+      }
+      if (event.target !== countInput) markStale();
+    });
+
+    document.getElementById("reset-colleges").addEventListener("click", function () {
+      renderRows(defaultColleges.length, defaultColleges);
+      clearErrors();
+      markStale();
+    });
+
+    form.addEventListener("submit", calculate);
+    document.getElementById("recalculate").addEventListener("click", calculate);
+    document.getElementById("edit-inputs").addEventListener("click", function () {
+      document.getElementById("inputs-title").scrollIntoView({ behavior: "smooth", block: "start" });
+      rowContainer.querySelector("input").focus({ preventScroll: true });
+    });
+    document.getElementById("print-results").addEventListener("click", function () { window.print(); });
+
+    renderRows(defaultColleges.length, defaultColleges);
+  }());
+  </script>
+</body>
+</html>
