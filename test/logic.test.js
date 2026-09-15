@@ -8,7 +8,7 @@ const { computeSeatPool, hamilton, allocate, validate, TIE_METHODS } = require('
 const col = (name, eligible, applicants, carry = 0) => ({ name, eligible, applicants, carry });
 const pool = (total, percent, rounding) => computeSeatPool([col('X', total, 0)], percent, rounding);
 
-/* The CSUN college list and the "Load test data" counts in src/app.html, in the same order. */
+/* The CSUN college list and the "Load test data" counts in src/sabbatical-allocation.html, in the same order. */
 const CSUN = [
   ['Andrew J. Anagnost College of Engineering and Computer Science', 33, 6],
   ['Health & Human Development', 64, 12],

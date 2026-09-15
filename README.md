@@ -18,8 +18,8 @@ The seat pool is a percentage of all eligible faculty (12% by default, rounded u
 ```
 dist/sabbatical-allocation.html   the deliverable (built; do not edit by hand)
 src/logic.js                      pure allocation logic, testable under Node
-src/app.html                      page: CSS, markup, and UI script
-build.js                          splices src/logic.js into src/app.html -> dist/
+src/sabbatical-allocation.html    page: CSS, markup, and UI script (source of the deliverable)
+build.js                          splices src/logic.js into src/sabbatical-allocation.html -> dist/
 test/logic.test.js                allocation tests, including randomized invariant checks
 test/build.test.js                checks that dist/ matches src/ and is self-contained
 tools/screenshot.py               optional headless render for visual review
@@ -39,7 +39,7 @@ npm run check     # build, then test
 python tools/screenshot.py   # optional: render dist/ headless, report JS errors, write full.png
 ```
 
-Edit `src/logic.js` or `src/app.html`, then run `npm run check` before committing. The screenshot tool needs `pip install playwright` and `playwright install chromium`.
+Edit `src/logic.js` or `src/sabbatical-allocation.html`, then run `npm run check` before committing. The screenshot tool needs `pip install playwright` and `playwright install chromium`.
 
 ## License
 

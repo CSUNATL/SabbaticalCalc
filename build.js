@@ -1,5 +1,5 @@
 'use strict';
-/* Splices src/logic.js into src/app.html at the /*__LOGIC__*\/ marker and writes
+/* Splices src/logic.js into src/sabbatical-allocation.html at the /*__LOGIC__*\/ marker and writes
    dist/sabbatical-allocation.html. No dependencies, no minification: the deliverable
    stays readable source. Line endings are normalised to LF so the output is identical
    on Windows and macOS. */
@@ -9,7 +9,7 @@ const path = require('node:path');
 const root = __dirname;
 const lf = s => s.replace(/\r\n/g, '\n');
 const logic = lf(fs.readFileSync(path.join(root, 'src', 'logic.js'), 'utf8'));
-const app = lf(fs.readFileSync(path.join(root, 'src', 'app.html'), 'utf8'));
+const app = lf(fs.readFileSync(path.join(root, 'src', 'sabbatical-allocation.html'), 'utf8'));
 
 // Drop the Node export guard; the browser must not see `module`.
 const exportGuard = /\n\/\* Node export for tests[^\n]*\n(?:if \(typeof module[\s\S]*?\n\}\n)/;
@@ -17,7 +17,7 @@ if (!exportGuard.test(logic)) throw new Error('src/logic.js: export guard not fo
 const browserLogic = logic.replace(exportGuard, '\n').trimEnd() + '\n';
 
 const marker = '/*__LOGIC__*/';
-if (app.split(marker).length !== 2) throw new Error('src/app.html: expected exactly one /*__LOGIC__*/ marker');
+if (app.split(marker).length !== 2) throw new Error('src/sabbatical-allocation.html: expected exactly one /*__LOGIC__*/ marker');
 const out = app.replace(marker, browserLogic.trimEnd());
 
 if (/\bmodule\.exports\b/.test(out)) throw new Error('module.exports leaked into the deliverable');

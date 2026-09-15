@@ -13,9 +13,9 @@ ARCHITECTURE.md      this file
 HANDOFF.md           record of the design conversation and reasoning
 README.md            short user-facing readme
 package.json         scripts only; no dependencies
-build.js             splices src/logic.js into src/app.html -> dist/
+build.js             splices src/logic.js into src/sabbatical-allocation.html -> dist/
 src/logic.js         pure allocation logic (Node-testable)
-src/app.html         page: CSS, markup, UI script, with /*__LOGIC__*/ marker
+src/sabbatical-allocation.html   page: CSS, markup, UI script, with /*__LOGIC__*/ marker; same name as the built file
 test/logic.test.js   node:test suite for src/logic.js
 test/build.test.js   checks dist/ matches src/ and is self-contained
 .gitattributes       LF line endings for text files, so builds are byte-identical on Windows and macOS
@@ -23,7 +23,7 @@ tools/screenshot.py  optional Playwright render for visual review
 dist/sabbatical-allocation.html   the deliverable (build output)
 ```
 
-`src/` is edited; `dist/` is generated. The only build step is string substitution: `build.js` reads `logic.js`, strips its `module.exports` guard, replaces `/*__LOGIC__*/` in `app.html`, normalises line endings to LF, and refuses to write if `module.exports` or an external URL would end up in the output. No bundler, no minification. The deliverable is readable source, which is itself a verification feature. `codex/` holds an independent implementation of the same brief and is not part of the build.
+`src/` is edited; `dist/` is generated. The only build step is string substitution: `build.js` reads `logic.js`, strips its `module.exports` guard, replaces `/*__LOGIC__*/` in `src/sabbatical-allocation.html`, normalises line endings to LF, and refuses to write if `module.exports` or an external URL would end up in the output. No bundler, no minification. The deliverable is readable source, which is itself a verification feature. `codex/` holds an independent implementation of the same brief and is not part of the build.
 
 ## Runtime structure (inside the deliverable)
 
@@ -49,7 +49,7 @@ Pure functions, no DOM.
 
 Termination argument: from round 2 on, every participant has `demand > 0`. A round either exhausts the pool (`Σ surplus = 0` → stop) or produces surplus, which requires some participant to have `allocated > demand`, which settles that participant and removes it from the next round. Participants strictly decrease, so at most `n` more rounds after round 1.
 
-### Part 2: UI (IIFE in `app.html`)
+### Part 2: UI (IIFE in `src/sabbatical-allocation.html`)
 
 - `state = { percent, rounding, tieMethod, colleges: [{ name, eligible, applicants, carry }] }`. `eligible`/`applicants` may be `NaN` while the user is typing; `validate` reports that. The array order is the list order and is significant under the list tie rule.
 - `renderInputs()` rebuilds the input `<tbody>` from `state.colleges` (one row per college: position cell with a drag handle, text input, three number inputs, move-up, move-down and remove buttons) and calls `recalc()`. Event delegation on the `<tbody>` handles `input` (write back to state by `data-i`/`data-k`) and `click` on the move and remove buttons.

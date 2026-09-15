@@ -8,7 +8,7 @@ Read `REQUIREMENTS.md` before changing behavior and `ARCHITECTURE.md` before cha
 
 ```
 npm test          # node --test, runs test/*.test.js against src/logic.js
-npm run build     # splices src/logic.js into src/app.html -> dist/sabbatical-allocation.html
+npm run build     # splices src/logic.js into src/sabbatical-allocation.html -> dist/sabbatical-allocation.html
 npm run check     # build then test (the build test fails if dist/ is stale)
 python3 tools/screenshot.py   # optional: headless render of dist/, prints JS errors, writes full.png
 ```
@@ -25,7 +25,7 @@ Node 20+ only. No `npm install` is needed; there are no dependencies. Do not add
 
 ## Workflow
 
-1. Edit `src/logic.js` and/or `src/app.html`. The `/*__LOGIC__*/` marker in `app.html` is where `build.js` inserts the logic; keep it.
+1. Edit `src/logic.js` and/or `src/sabbatical-allocation.html`. The `/*__LOGIC__*/` marker in the page is where `build.js` inserts the logic; keep it.
 2. `npm run check`. Every test must pass. If you change allocation behavior, add or update a test first. `test/build.test.js` compares `dist/` with the build output, so `npm test` alone fails after a `src/` edit until you rebuild.
 3. If UI changed, run `tools/screenshot.py` (needs `pip install playwright && playwright install chromium`) and look at `full.png`. Check that the round tables still fit at 1280px wide without horizontal scrolling and that no JS errors are printed.
 4. Update ARCHITECTURE.md or REQUIREMENTS.md if the change affects what they describe.
@@ -33,7 +33,7 @@ Node 20+ only. No `npm install` is needed; there are no dependencies. Do not add
 ## Conventions
 
 - Vanilla JS, ES2020, no build tooling beyond `build.js`. No TypeScript, no bundler, no framework.
-- UI code in `app.html` is one IIFE. Rendering functions return HTML strings; state is a single `state` object; every input change calls `recalc()` which re-validates and re-renders results from scratch. Keep it that way; do not introduce incremental DOM patching.
+- UI code in `src/sabbatical-allocation.html` is one IIFE. Rendering functions return HTML strings; state is a single `state` object; every input change calls `recalc()` which re-validates and re-renders results from scratch. Keep it that way; do not introduce incremental DOM patching.
 - All user-facing text is plain sentence-case English written for a faculty committee, not for developers. Say "seat", "college", "applicant", "settled", "returned to the pool". Never expose internal names like `remNum` or `demandBefore` in the UI.
 - Escape anything derived from user input with `esc()` before inserting into HTML.
 - Numbers in tables use tabular figures; quotas and fractions show 3 decimals; shares show 1 decimal percent.

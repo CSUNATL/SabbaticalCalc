@@ -156,3 +156,7 @@ Tests: 31, including both rules, unresolved detection at the cutoff (a tie that 
 ### Third tie rule (same session)
 
 Jeff asked for a third option: carry forward, then list order, with no step after that, flagging the tie if still unresolved. Added as `'list-only'`. Two colleges cannot share a list position, so under this rule the flag can never fire; Jeff was told this and the rule was built as specified. The flag is implemented generically: `hamilton` now walks the ordered steps of whichever rule is selected and reports `'unresolved'` when every step leaves the last winner and first loser equal, so any future rule gets the same treatment. Reordering the list now switches the rule to list order only when the eligible-faculty rule is in use; a list rule already chosen is kept. The unresolved texts name the rule in use instead of assuming eligible faculty. Tests: 32.
+
+### Source file renamed (same session)
+
+Jeff asked for the source page and the built file to share a name, since `app.html` was uninformative. `src/app.html` is now `src/sabbatical-allocation.html`; the earlier mentions of `app.html` in this file are history. `build.js`, the docs, and the test comment were updated.
