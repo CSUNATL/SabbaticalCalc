@@ -30,7 +30,7 @@ Hamilton fractional-remainder ties are resolved deterministically by:
 3. college name A–Z, case-insensitive; then
 4. original entry order.
 
-Each college has a current carry-forward input from 0 up to, but not including, 1. A prior value persists when the college does not win a cutoff tie. It is consumed and reset to zero when the college wins such a tie. A college that loses a cutoff tie, still has unmet demand after its floor allocation, and has no existing balance receives the tied fractional remainder as its next-year carry-forward. An existing nonzero balance is preserved rather than replaced or accumulated. The results include a separate report stating the exact value to enter for every college in the next allocation cycle.
+Each college has a current carry-forward input from 0 up to, but not including, 1. A prior value persists when the college does not win a cutoff tie. It is consumed and reset to zero when the college wins such a tie. A college that loses a cutoff tie, still has unmet demand after its floor allocation, and has no existing balance receives the tied fractional remainder as its next-year carry-forward. An existing nonzero balance is preserved rather than replaced or accumulated. The results include a separate report stating the exact value to enter for every college in the next allocation cycle. Cutoff tie winners are marked with a teal star and tied colleges not awarded the seat with an amber diamond; matching row highlights appear in the final allocation, carry-forward report, and round audit.
 
 The rule is displayed in the interface and applied in every round. Names must be non-empty and unique (case-insensitive), so audit reports remain unambiguous.
 

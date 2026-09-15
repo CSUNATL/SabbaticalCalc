@@ -27,7 +27,7 @@ Status key: **[done]** implemented in v1.0; **[open]** not yet decided or built.
 ## 4. Allocation rules (policy)
 
 - R4.1 **[done]** Apportionment within a round uses the Hamilton (largest-remainder) method: each participating college's exact quota is `pool × eligible / (eligible of participants)`; each receives the whole-number part; remaining seats go one each to the largest fractional parts.
-- R4.2 **[done]** Fractional parts are compared exactly (integer arithmetic). Ties at the cutoff are broken by larger carry forward (compared in thousandths of a seat), then larger eligible headcount, then college name (A→Z, fixed English collation). Ties that affect the outcome are reported with who won, who lost, and which rule decided.
+- R4.2 **[done]** Fractional parts are compared exactly (integer arithmetic). Ties at the cutoff are broken by larger carry forward (compared in thousandths of a seat), then larger eligible headcount, then college name (A→Z, fixed English collation). Ties that affect the outcome are reported with who won, who lost, and which rule decided, and the tied colleges are marked in every table (a "won tie" or "lost tie" label and a colored row edge, blue for won and amber for lost).
 - R4.3 **[done]** Round 1 includes every college, including colleges with zero applicants. Round-1 quotas depend only on headcounts.
 - R4.4 **[done]** After apportionment, each college's allocation is matched to its unfunded applicants. Seats exceeding a college's unfunded applicants are returned to the pool. A college with no unfunded applicants is settled.
 - R4.5 **[done]** Each subsequent round apportions the returned seats, by the same method, among only the colleges that still have unfunded applicants. Settled colleges are excluded.

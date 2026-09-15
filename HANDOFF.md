@@ -68,3 +68,50 @@ Jeff asked for CLAUDE.md, ARCHITECTURE.md, REQUIREMENTS.md, any other needed fil
 2. Resolve R7.1 and R7.2 against the policy text; adjust `computeSeatPool` default or `hamilton`'s comparator, update tests and the on-page method text.
 3. Replace the example college names and counts with real ones if the file will be distributed pre-loaded, or leave the generic example and rely on save/load.
 4. Decide on R7.5 (institution name, academic year, sign-off block in print).
+
+## Second session: Claude Code, September 15, 2026
+
+Jeff continued the project in Claude Code (Claude Fable 5.1). Codex worked in parallel in `codex/` on an independent implementation of the same brief; the two were not merged.
+
+### Repository
+
+- Created `github.com/CSUNATL/SabbaticalCalc` (public), branch `main`. The deliverable lives at the repository root as `sabbatical-allocation.html`, not in `dist/`.
+- The `src/`, `test/`, `build.js`, `package.json`, and `tools/` layout described in CLAUDE.md and ARCHITECTURE.md was not brought over from session 1. Only the built file exists, so there is no test suite for it and `npm run check` cannot run. Every check in this session was done ad hoc by extracting the logic block into Node and rendering in headless Chrome; none of it is checked in.
+- `codex/` holds the brief, Codex's `sabbaticalapp.html` (renamed from `index.html` at Jeff's request), its README, and its own test file (`node codex/tests/allocation.test.cjs`, 15 tests). Codex's version has kept pace with the same features on its own.
+- The root `README.md` and `index.html` are the initial scaffold and are stale: the README points at the stub, not the worksheet.
+
+### Review of the session-1 file
+
+Verified correct: the documented nine-college example, 20,000 fuzzed inputs against the R4.7 invariants, rendering at 1280px with no script errors.
+
+Found and fixed this session: the print stylesheet could not expand a closed `<details>` (CSS cannot; replaced with `beforeprint`/`afterprint` handlers); college names were inserted unescaped in the round narratives; long names overflowed the tables (name cells may now wrap).
+
+Found and not yet fixed: the seat pool is computed in floating point and is off by one seat for some non-integer percentages (375 × 18.4% gives 68 instead of 69; 250 × 64.4% rounded up gives 162 instead of 161). Integer percentages, including 12%, are unaffected. The fix is to take the percentage in hundredths and use integer arithmetic. Also: "rounded to nearest" is round-half-up, and the keyboard focus ring on the file-load control is invisible because the real input is 1px.
+
+### Changes made on Jeff's instruction
+
+1. The page opens with the ten CSUN colleges by name, in the order Jeff gave, with counts at zero; "Reset to CSUN colleges" restores the list. The fictional example is gone.
+2. Seat-pool rounding defaults to round up.
+3. A "How is the allocation calculated?" link at the top and in the round-by-round section opens the method section, rewritten as numbered steps with the session-1 reasoning for the two non-obvious rules.
+4. Round tables show the exact quota arithmetic (pool × eligible ÷ total, then the result), taken from Codex's version.
+5. "Load test data" fills the CSUN list with Jeff's test counts (CECS 33/6, CHHD 64/12, COH 39/13, COUNSELING 9/0, CSBS 75/21, CSM 45/16, DNCBE 38/13, LIBRARY 18/2, MCCAMC 39/10, MDECOE 22/7), mapped by position to the full names: 382 eligible, 100 applicants, 46 seats, two rounds.
+6. Carry forward for ties. Jeff's specification: a per-college field tracking the fraction that went unmet because of a tie; used to break ties in the current year; persists until that college wins a tie; the page reports what next year's value should be. Implemented as R4.2 and R4.8: tie-break is carry forward, then headcount, then name; at year end a tie winner resets to 0, a tie loser that still has an unfunded applicant adds the fraction it lost, everyone else is unchanged. Two choices made without instruction and flagged to Jeff: a loser whose applicants were all funded by year end adds nothing, since the seat cost it nothing; repeated losses accumulate, so values can exceed 1. Codex's version caps its carry-forward input below 1, so the two implementations differ there. Within a year, a college that has won a tie is treated as having no carry forward in later rounds.
+7. Ties and tie winners are marked in every table: "won tie" and "lost tie" pills, a colored row edge (blue won, amber lost), and bold names in the tie sentence.
+
+### Other decisions
+
+- The name tie-break uses fixed English collation so the result cannot depend on a committee member's machine locale (R2.4).
+- Saved-file format is version 2, adding `carry`; version-1 files load with carry forward 0. A button in the carry-forward report writes next year's starting file: names, next year's carry forwards, counts cleared.
+- The "total eligible is zero" message was reworded as a prompt, since that is the state the page now opens in.
+
+### State at end of session 2
+
+- All work committed and pushed to `main`. Working tree clean at the last commit.
+- Open: R7.1 (rounding rule against the policy text; the default is now round up), R7.2 (whether headcount then name are the right rules when carry forwards are equal), R7.3, R7.4, R7.5; the seat-pool floating-point fix; the missing `src/` and test layout; the stale root README and stub `index.html`; whether the main file and Codex's should agree on the carry-forward cap.
+
+### Suggested next steps
+
+1. Fix the seat-pool arithmetic (integer hundredths) before any non-integer percentage is used in earnest.
+2. Either reconstruct `src/`, `build.js`, `package.json`, and `test/` from the single file so `npm run check` works as CLAUDE.md describes, or rewrite CLAUDE.md and ARCHITECTURE.md for a single-file repository. Turn this session's scratch checks (documented example, fuzz invariants, seven tie scenarios) into the checked-in test suite.
+3. Replace the root README and drop or repurpose the stub `index.html` (make the worksheet `index.html` if GitHub Pages is wanted).
+4. Confirm R7.1 and R7.2 against the policy text.

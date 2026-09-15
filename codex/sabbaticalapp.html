@@ -677,16 +677,36 @@
 
     .tie-badge {
       display: inline-flex;
+      align-items: center;
+      gap: 4px;
       margin-right: 5px;
-      padding: 2px 6px;
+      padding: 3px 7px;
+      border: 1px solid transparent;
       border-radius: 999px;
       font-size: .67rem;
       font-weight: 850;
       white-space: nowrap;
     }
 
-    .tie-won { color: #236044; background: #e9f5ee; }
-    .tie-lost { color: #815a10; background: #fff3d8; }
+    .tie-won { color: #126044; background: #ddf3e9; border-color: #a9d9c3; }
+    .tie-lost { color: #79520b; background: #fff0ca; border-color: #e9ca80; }
+    .final-tie-marker { margin-left: 7px; margin-right: 0; vertical-align: middle; }
+
+    .tie-row-won td { background: #eff9f5; border-bottom-color: #cfe8dc; }
+    .tie-row-lost td { background: #fff9e9; border-bottom-color: #f1dfb7; }
+    .tie-row-won td:first-child { box-shadow: inset 4px 0 0 var(--teal); }
+    .tie-row-lost td:first-child { box-shadow: inset 4px 0 0 var(--gold); }
+    .tie-row-won .college-name { color: #075f46; }
+    .tie-row-lost .college-name { color: #76500d; }
+
+    .tie-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    .tie-legend .tie-badge { margin-right: 0; }
 
     .status-pill {
       display: inline-flex;
@@ -749,6 +769,30 @@
       color: var(--teal-dark);
       font-size: .8rem;
       font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .round-meta {
+      display: flex;
+      align-items: flex-end;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .round-tie-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      max-width: 310px;
+      padding: 4px 8px;
+      overflow: hidden;
+      color: #126044;
+      background: #ddf3e9;
+      border: 1px solid #a9d9c3;
+      border-radius: 999px;
+      font-size: .69rem;
+      font-weight: 850;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
@@ -878,14 +922,16 @@
       .metric-value { font-size: 2rem; }
       .results-actions { width: 100%; }
       .results-actions .button { flex: 1; }
+      .rounds-section .section-head { align-items: flex-start; flex-direction: column; }
       .round-card > summary { grid-template-columns: auto 1fr auto; }
-      .round-pool { grid-column: 2; grid-row: 2; }
+      .round-meta { grid-column: 2; grid-row: 2; align-items: flex-start; }
       .round-card > summary .summary-chevron { grid-column: 3; grid-row: 1 / span 2; }
       footer { align-items: flex-start; flex-direction: column; padding: 0 18px 28px; }
     }
 
     @media print {
       @page { margin: .55in; }
+      * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       body { background: #fff; color: #000; font-size: 10pt; }
       .masthead { color: #000; background: #fff; border-bottom: 2px solid #000; }
       .masthead::after, .brand-mark, .input-card, .method-panel, .results-actions, .stale-notice, footer { display: none !important; }
@@ -1088,6 +1134,10 @@
           <div>
             <h3 id="rounds-title">Calculation audit trail</h3>
             <p>Open any round to verify the Hamilton quotas and capacity adjustments.</p>
+          </div>
+          <div class="tie-legend" aria-label="Tie highlighting legend">
+            <span class="tie-badge tie-won"><span aria-hidden="true">★</span> Tie winner</span>
+            <span class="tie-badge tie-lost"><span aria-hidden="true">◆</span> Tied, not awarded</span>
           </div>
         </div>
         <div id="rounds"></div>
@@ -1619,6 +1669,12 @@
       const body = result.colleges.map(function (college, index) {
         const allocation = result.allocations[index];
         const remaining = result.remainingApplicants[index];
+        const tieEvents = result.tieEvents.filter(function (event) { return event.index === index; });
+        const wonTie = tieEvents.some(function (event) { return event.outcome === "won"; });
+        const lostTie = tieEvents.some(function (event) { return event.outcome === "lost"; });
+        let tieMarker = "";
+        if (wonTie) tieMarker = '<span class="tie-badge tie-won final-tie-marker"><span aria-hidden="true">★</span> Tie winner</span>';
+        else if (lostTie) tieMarker = '<span class="tie-badge tie-lost final-tie-marker"><span aria-hidden="true">◆</span> Tied</span>';
         let statusClass = "status-none";
         let statusText = college.applicants === 0 ? "No applicants" : "Not funded";
         if (college.applicants > 0 && remaining === 0) {
@@ -1628,7 +1684,7 @@
           statusClass = "status-partial";
           statusText = "Partly funded";
         }
-        return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
+        return '<tr class="' + (wonTie ? "tie-row-won" : (lostTie ? "tie-row-lost" : "")) + '"><td class="college-name">' + escapeHtml(college.name) + tieMarker + '</td>' +
           '<td class="numeric">' + college.eligible.toLocaleString() + '</td>' +
           '<td class="numeric">' + college.applicants.toLocaleString() + '</td>' +
           '<td class="numeric allocation-number">' + allocation.toLocaleString() + '</td>' +
@@ -1644,6 +1700,9 @@
     function renderCarryForwardReport(result) {
       const body = result.colleges.map(function (college, index) {
         const events = result.tieEvents.filter(function (event) { return event.index === index; });
+        const wonTie = events.some(function (event) { return event.outcome === "won"; });
+        const lostTie = events.some(function (event) { return event.outcome === "lost"; });
+        const rowClass = wonTie ? "tie-row-won" : (lostTie ? "tie-row-lost" : "");
         let activity;
         if (events.length === 0) {
           activity = college.carryForward > 0
@@ -1653,21 +1712,21 @@
           activity = events.map(function (event) {
             const fraction = formatCarryForward(event.fraction);
             if (event.outcome === "won") {
-              return '<div><span class="tie-badge tie-won">Won tie</span>Round ' + event.round + ': won a ' + fraction + ' cutoff tie; carry forward cleared.</div>';
+              return '<div><span class="tie-badge tie-won"><span aria-hidden="true">★</span> Tie winner</span>Round ' + event.round + ': won a ' + fraction + ' cutoff tie; carry forward cleared.</div>';
             }
             if (event.createdCarryForward) {
-              return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie with unmet demand; ' + fraction + ' recorded for next year.</div>';
+              return '<div><span class="tie-badge tie-lost"><span aria-hidden="true">◆</span> Tied, not awarded</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie with unmet demand; ' + fraction + ' recorded for next year.</div>';
             }
             if (event.carryForwardBefore > 0) {
-              return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie; prior carry forward persists.</div>';
+              return '<div><span class="tie-badge tie-lost"><span aria-hidden="true">◆</span> Tied, not awarded</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie; prior carry forward persists.</div>';
             }
             if (event.applicantsAfter > 0 && event.nextCarryForwardAfter > 0) {
-              return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost another ' + fraction + ' cutoff tie; the balance established earlier this year remains.</div>';
+              return '<div><span class="tie-badge tie-lost"><span aria-hidden="true">◆</span> Tied, not awarded</span>Round ' + event.round + ': lost another ' + fraction + ' cutoff tie; the balance established earlier this year remains.</div>';
             }
-            return '<div><span class="tie-badge tie-lost">Lost tie</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie, but no demand remained after the floor award; no balance was created.</div>';
+            return '<div><span class="tie-badge tie-lost"><span aria-hidden="true">◆</span> Tied, not awarded</span>Round ' + event.round + ': lost a ' + fraction + ' cutoff tie, but no demand remained after the floor award; no balance was created.</div>';
           }).join("");
         }
-        return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
+        return '<tr class="' + rowClass + '"><td class="college-name">' + escapeHtml(college.name) + '</td>' +
           '<td class="numeric carry-value">' + formatCarryForward(college.carryForward) + '</td>' +
           '<td class="tie-activity">' + activity + '</td>' +
           '<td class="numeric carry-value carry-value-next">' + formatCarryForward(result.nextCarryForwards[index]) + '</td></tr>';
@@ -1711,11 +1770,14 @@
         const recordRows = round.records.map(function (record) {
           const college = result.colleges[record.index];
           const rankText = record.rank === null ? "—" : "#" + record.rank;
-          const bonusText = record.bonus ? '<span class="bonus">+1 remainder seat</span>' : "—";
+          const bonusText = record.bonus
+            ? (record.tieOutcome === "won" ? '<span class="tie-badge tie-won"><span aria-hidden="true">★</span> +1 tie-break seat</span>' : '<span class="bonus">+1 remainder seat</span>')
+            : "—";
           let tieText = "—";
-          if (record.tieOutcome === "won") tieText = '<span class="tie-badge tie-won">Won cutoff tie</span>';
-          if (record.tieOutcome === "lost") tieText = '<span class="tie-badge tie-lost">Lost cutoff tie</span>';
-          return '<tr><td class="college-name">' + escapeHtml(college.name) + '</td>' +
+          if (record.tieOutcome === "won") tieText = '<span class="tie-badge tie-won"><span aria-hidden="true">★</span> Tie winner</span>';
+          if (record.tieOutcome === "lost") tieText = '<span class="tie-badge tie-lost"><span aria-hidden="true">◆</span> Tied, not awarded</span>';
+          const rowClass = record.tieOutcome === "won" ? "tie-row-won" : (record.tieOutcome === "lost" ? "tie-row-lost" : "");
+          return '<tr class="' + rowClass + '"><td class="college-name">' + escapeHtml(college.name) + '</td>' +
             '<td class="numeric">' + college.eligible.toLocaleString() + '</td>' +
             '<td>' + exactQuota(record, round, college) + '</td>' +
             '<td class="numeric">' + record.base.toLocaleString() + '</td>' +
@@ -1735,9 +1797,13 @@
         const subtitle = round.number === 1
           ? "Every college participates, including those with no applicants."
           : "Only colleges with unfunded applicants participate.";
+        const tieWinners = round.records.filter(function (record) { return record.tieOutcome === "won"; });
+        const tieIndicator = tieWinners.length
+          ? '<span class="round-tie-indicator"><span aria-hidden="true">★</span> Cutoff tie: ' + plural(tieWinners.length, "winner") + ' marked</span>'
+          : "";
         return '<details class="round-card"' + (roundIndex === 0 ? " open" : "") + '><summary>' +
           '<span class="round-number">' + round.number + '</span><span><span class="round-title">Round ' + round.number + ' · ' + title + '</span><span class="round-subtitle">' + subtitle + '</span></span>' +
-          '<span class="round-pool">' + plural(round.pool, "seat") + ' in pool</span>' + icons.chevron + '</summary>' +
+          '<span class="round-meta"><span class="round-pool">' + plural(round.pool, "seat") + ' in pool</span>' + tieIndicator + '</span>' + icons.chevron + '</summary>' +
           '<div class="round-body"><div class="round-explainer">' +
             '<div class="round-stat"><span>Participating colleges</span><strong>' + round.participantIndexes.length.toLocaleString() + '</strong></div>' +
             '<div class="round-stat"><span>Participating eligible</span><strong>' + round.totalWeight.toLocaleString() + '</strong></div>' +

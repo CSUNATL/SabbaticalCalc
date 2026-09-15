@@ -11,6 +11,8 @@ assert.match(html, /href="#calculation-method"/, "page links to the calculation 
 assert.match(html, /id="calculation-method"/, "page contains the calculation description");
 assert.match(html, /Redistribute returned seats/, "description documents redistribution rounds");
 assert.match(html, /id="load-test-data"/, "page provides a test-dataset control");
+assert.match(html, /Tie winner/, "page visibly labels tie winners");
+assert.match(html, /Tied, not awarded/, "page visibly labels tied colleges not awarded a seat");
 const scripts = Array.from(html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g));
 assert.ok(scripts.length >= 2, "sabbaticalapp.html contains core and interface scripts");
 scripts.forEach(function (script, index) {
