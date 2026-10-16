@@ -41,6 +41,7 @@ def check(p, method, dist, out, problems):
     page.click("#btnTest")
     rule = page.locator("#ruleOut").inner_text()
     assert "382 eligible faculty × 12% = 45.84, rounded up to 46 seats" in rule, rule
+    assert "That is at least the minimum of 42 seats, so the pool is 46 seats" in rule, rule
     assert page.locator("#results h3", has_text="Round 2").count() == 1, "expected two rounds"
     assert page.locator("#results h3", has_text="Round 3").count() == 0
     results = page.locator("#results").inner_text()
@@ -93,7 +94,9 @@ def check(p, method, dist, out, problems):
         row.locator("input[data-k=name]").fill(name)
         row.locator("input[data-k=eligible]").fill(str(elig))
         row.locator("input[data-k=applicants]").fill(str(appl))
+    page.fill("#minimum", "0")                                         # no minimum, so that
     page.fill("#percent", "3")                                         # 100 × 3% = 3 seats
+    assert "minimum" not in page.locator("#ruleOut").inner_text()
     text = page.locator("#results").inner_text()
     assert "Unresolved tie in round 1" in text, text
     assert "won tie, unresolved" in text and "lost tie, unresolved" in text
@@ -130,7 +133,9 @@ def check(p, method, dist, out, problems):
     assert page.locator("#inputRows tr:nth-child(1) input[data-k=name]").input_value() == "Zeta"
     assert page.locator("#inputRows tr:nth-child(2) input[data-k=name]").input_value() == "Arts, Media"
     assert page.locator("#inputRows tr:nth-child(2) input[data-k=carry]").input_value() == "0.5"
-    assert "150 eligible faculty" in page.locator("#ruleOut").inner_text()
+    rule = page.locator("#ruleOut").inner_text()                       # 150 × 18.4% = 27.6: the minimum applies
+    assert "150 eligible faculty × 18.4% = 27.6, rounded up to 28 seats. That is fewer than the minimum of 42 seats, so the pool is 42 seats" in rule, rule
+    assert "rounded up to 28 seats. That is fewer than the minimum of 42 seats, so the pool is 42 seats." in page.locator("#results").text_content()
     assert page.locator("#tieMethod").input_value() == "eligible", "loading a file returns the tie rule to its default"
     plain = os.path.join(tmp, "plain.csv")
     with open(plain, "w", encoding="utf-8") as fh:
@@ -139,7 +144,10 @@ def check(p, method, dist, out, problems):
     page.wait_for_function("document.getElementById('ruleOut').textContent.includes('30 eligible faculty')")
     page.click("#btnTest")
 
-    # One validation error: results withheld, message shown.
+    # Validation errors: results withheld, message shown.
+    page.fill("#minimum", "")
+    assert "Minimum number of seats must be a whole number" in page.locator("#errors").inner_text()
+    page.fill("#minimum", "42")
     page.fill("#inputRows tr:nth-child(1) input[data-k=applicants]", "999")
     assert "cannot exceed eligible faculty" in page.locator("#errors").inner_text()
     assert page.locator("#results").inner_text().strip() == ""

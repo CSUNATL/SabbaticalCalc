@@ -68,6 +68,40 @@ test('seat pool: edge cases', () => {
   assert.equal(two.seats, 46);
 });
 
+test('seat pool: never fewer than the minimum (CSUN Section 600 sets 42)', () => {
+  const csun = computeSeatPool(CSUN, 12, 'up', 42);                  // 45.84 rounds up to 46, above the minimum
+  assert.equal(csun.rounded, 46);
+  assert.equal(csun.minimum, 42);
+  assert.equal(csun.seats, 46);
+  const small = computeSeatPool([col('X', 300, 0)], 12, 'up', 42);   // 36 is below the minimum
+  assert.equal(small.exactText, '36');
+  assert.equal(small.rounded, 36);
+  assert.equal(small.seats, 42);
+  const equal = computeSeatPool([col('X', 350, 0)], 12, 'up', 42);   // exactly 42 either way
+  assert.equal(equal.rounded, 42);
+  assert.equal(equal.seats, 42);
+  assert.equal(computeSeatPool([col('X', 10, 0)], 0, 'down', 42).seats, 42);
+  assert.equal(computeSeatPool([col('X', 300, 0)], 12, 'up', 0).seats, 36);
+  assert.equal(computeSeatPool([col('X', 300, 0)], 12, 'up').seats, 36);   // no minimum unless one is given
+  assert.equal(computeSeatPool([col('X', 300, 0)], 12, 'up').minimum, 0);
+});
+
+test('allocate: a pool raised to the minimum is divided like any other, under both methods', () => {
+  const cs = [col('A', 100, 30), col('B', 200, 50)];
+  const p = computeSeatPool(cs, 12, 'up', 42);                      // 300 × 12% = 36, raised to 42
+  assert.equal(p.seats, 42);
+  const few = [col('A', 100, 5), col('B', 200, 10)];
+  for (const ap of APPORTIONMENTS) {
+    const res = allocate(cs, p.seats, 'eligible', ap);
+    assert.deepEqual(res.final.map(f => f.awarded), [14, 28], ap);  // 42 × 100/300 and 42 × 200/300
+    assert.equal(res.unallocated, 0, ap);
+    const short = allocate(few, p.seats, 'eligible', ap);            // more seats than applicants: the rest are unallocated
+    assert.deepEqual(short.final.map(f => f.awarded), [5, 10], ap);
+    assert.equal(short.unallocated, 27, ap);
+    assert.equal(short.totalAwarded + short.unallocated, 42, ap);
+  }
+});
+
 test('seat pool: agrees with a BigInt reference over many random inputs', () => {
   let seed = 12345;
   const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
@@ -391,6 +425,8 @@ test('allocate: an unresolved tie under the default rule is flagged and placed p
 test('validate: clean input has no errors', () => {
   assert.deepEqual(validate(CSUN, 12), []);
   assert.deepEqual(validate([col('A', 1, 0)], 12.3456), []);
+  assert.deepEqual(validate(CSUN, 12, 42), []);
+  assert.deepEqual(validate(CSUN, 12, 0), []);
 });
 
 test('validate: each rule produces a specific message', () => {
@@ -400,6 +436,7 @@ test('validate: each rule produces a specific message', () => {
   assert.match(msgs([col('A', 1, 0)], -1)[0], /between 0 and 100/);
   assert.match(msgs([col('A', 1, 0)], NaN)[0], /between 0 and 100/);
   assert.match(msgs([col('A', 1, 0)], 12.00001)[0], /at most four decimal places/);
+  for (const m of [1.5, -1, NaN]) assert.match(validate([col('A', 1, 0)], 12, m)[0], /Minimum number of seats must be a whole number/);
   assert.match(msgs([col('', 1, 0)])[0], /Row 1 needs a college name/);
   assert.match(msgs([col('A', 1, 0), col(' a ', 1, 0)])[0], /appears more than once/);
   assert.match(msgs([col('A', 1.5, 0)])[0], /eligible faculty must be a whole number/);

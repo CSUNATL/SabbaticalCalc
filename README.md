@@ -13,7 +13,7 @@ Every number the page produces can be checked by hand from the inputs shown on i
 3. Enter each college's carry forward from the previous year's report, if any. Or load all of it at once from a spreadsheet saved as CSV with columns for college, eligible faculty, applicants, and carry forward; the page's "Files" section shows the shape.
 4. Results update as you type. Use the buttons at the top to save the inputs to a CSV file, load them again later, download the results as CSV, or print.
 
-The seat pool is a percentage of all eligible faculty (12% by default, rounded up by default). Both are adjustable on the page. "How is the allocation calculated?" at the top of the page opens a numbered description of the whole procedure and the reasoning behind its rules.
+The seat pool is a percentage of all eligible faculty (12% by default, rounded up by default), but never fewer than a minimum number of seats (42 by default, from CSUN's Section 600 policy). All three are adjustable on the page. "How is the allocation calculated?" at the top of the page opens a numbered description of the whole procedure and the reasoning behind its rules.
 
 ## Repository layout
 

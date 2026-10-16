@@ -194,7 +194,8 @@
         <option value="nearest">rounded to nearest</option>
         <option value="down">rounded down</option>
       </select>
-      <span>to a whole number.</span>
+      <span>to a whole number, but no fewer than</span>
+      <input type="number" id="minimum" min="0" step="1" value="42" aria-label="Minimum number of seats"><span>seats.</span>
     </div>
     <p class="rule-out" id="ruleOut"></p>
     <div class="rule-line">
@@ -230,7 +231,7 @@
     <summary>How the allocation is calculated</summary>
     <p>This page carries out the procedure below. Every number it produces appears in the tables and in the step-by-step record, so each step can be checked by hand from the inputs.</p>
     <ol>
-      <li><strong>Count the seat pool.</strong> Add up the eligible faculty of all colleges. Multiply by the percentage set above (12% unless changed). Round to a whole number by the rule chosen above (rounded up unless changed; "rounded to nearest" rounds an exact half up). The percentage may have up to four decimal places, and the product is worked out exactly, not in rounded decimals. Both the exact product and the rounded result are shown under the inputs.</li>
+      <li><strong>Count the seat pool.</strong> Add up the eligible faculty of all colleges. Multiply by the percentage set above (12% unless changed). Round to a whole number by the rule chosen above (rounded up unless changed; "rounded to nearest" rounds an exact half up). If that is fewer than the minimum set above (42 unless changed, because CSUN's Section 600 policy calls for no fewer than 42 sabbaticals), the pool is the minimum instead; a minimum of 0 means there is none. The percentage may have up to four decimal places, and the product is worked out exactly, not in rounded decimals. The exact product, the rounded result, and the pool after the minimum are all shown under the inputs.</li>
       <!--[hamilton]-->
       <li><strong>Round 1: divide the pool among all colleges in proportion to eligible faculty.</strong> Every college takes part, including colleges with no applicants. Each college's exact quota is the pool × (its eligible faculty ÷ the eligible faculty of all colleges taking part). Quotas are usually not whole numbers.</li>
       <li><strong>Give each college the whole-number part of its quota.</strong> These whole seats add up to less than the pool unless every quota happens to be a whole number.</li>
@@ -309,13 +310,13 @@ Library,18,2,0.333</pre>
     'Michael D. Eisner College of Education',
   ];
   const DEFAULTS = {
-    percent: 12, rounding: 'up', tieMethod: 'eligible',
+    percent: 12, rounding: 'up', minimum: 42, tieMethod: 'eligible',
     colleges: CSUN_COLLEGES.map(name => ({ name, eligible: 0, applicants: 0, carry: 0 })),
   };
   /* Test data for trying the worksheet, in the same college order: CECS, CHHD, COH, COUNSELING, CSBS, CSM, DNCBE, LIBRARY, MCCAMC, MDECOE. */
   const TEST_COUNTS = [[33, 6], [64, 12], [39, 13], [9, 0], [75, 21], [45, 16], [38, 13], [18, 2], [39, 10], [22, 7]];
   const TEST_DATA = {
-    percent: 12, rounding: 'up', tieMethod: 'eligible',
+    percent: 12, rounding: 'up', minimum: 42, tieMethod: 'eligible',
     colleges: CSUN_COLLEGES.map((name, i) => ({ name, eligible: TEST_COUNTS[i][0], applicants: TEST_COUNTS[i][1], carry: 0 })),
   };
   let state = JSON.parse(JSON.stringify(DEFAULTS));
@@ -354,6 +355,7 @@ Library,18,2,0.333</pre>
     });
     $('percent').value = state.percent;
     $('rounding').value = state.rounding;
+    $('minimum').value = state.minimum;
     $('tieMethod').value = state.tieMethod;
     recalc();
   }
@@ -427,6 +429,7 @@ Library,18,2,0.333</pre>
   });
   $('percent').addEventListener('input', e => { state.percent = toInt(e.target.value); recalc(); });
   $('rounding').addEventListener('change', e => { state.rounding = e.target.value; recalc(); });
+  $('minimum').addEventListener('input', e => { state.minimum = toInt(e.target.value); recalc(); });
   $('tieMethod').addEventListener('change', e => { state.tieMethod = e.target.value; recalc(); });
   $('btnReset').addEventListener('click', () => { state = JSON.parse(JSON.stringify(DEFAULTS)); renderInputs(); });
   $('btnTest').addEventListener('click', () => { state = JSON.parse(JSON.stringify(TEST_DATA)); renderInputs(); });
@@ -495,7 +498,7 @@ Library,18,2,0.333</pre>
     const q = v => '"' + String(v).replace(/"/g, '""') + '"';
     const row = cells => cells.map(q).join(',');
     const lines = [];
-    lines.push(row(['Method', METHOD.label, 'Seat pool', 'Total eligible', pool.totalEligible, 'Percent', pool.percent, 'Exact', pool.exactText, 'Rounding', pool.rounding, 'Seats', pool.seats, 'Tie rule after carry forward', TIE_METHOD_LABEL[res.method]]));
+    lines.push(row(['Method', METHOD.label, 'Seat pool', 'Total eligible', pool.totalEligible, 'Percent', pool.percent, 'Exact', pool.exactText, 'Rounding', pool.rounding, 'Rounded', pool.rounded, 'Minimum', pool.minimum, 'Seats', pool.seats, 'Tie rule after carry forward', TIE_METHOD_LABEL[res.method]]));
     lines.push('');
     lines.push(row(METHOD.csvHeader));
     res.rounds.forEach(rd => METHOD.csvRows(rd).forEach(cells => lines.push(row(cells))));
@@ -520,15 +523,25 @@ Library,18,2,0.333</pre>
     const te = cs.reduce((s, c) => s + (Number.isInteger(c.eligible) ? c.eligible : 0), 0);
     const ta = cs.reduce((s, c) => s + (Number.isInteger(c.applicants) ? c.applicants : 0), 0);
     $('totElig').textContent = n0(te); $('totApps').textContent = n0(ta);
-    const errs = validate(cs, state.percent);
+    const errs = validate(cs, state.percent, state.minimum);
     showErrors(errs);
     if (errs.length) { $('ruleOut').textContent = ''; $('results').innerHTML = ''; lastResult = null; return; }
-    const pool = computeSeatPool(cs, state.percent, state.rounding);
+    const pool = computeSeatPool(cs, state.percent, state.rounding, state.minimum);
     const res = allocate(cs, pool.seats, state.tieMethod, APPORTIONMENT);
     lastResult = { pool, res, colleges: cs, totalApplicants: ta };
     const rw = { down: 'rounded down', nearest: 'rounded to nearest', up: 'rounded up' }[pool.rounding];
-    $('ruleOut').innerHTML = `${n0(pool.totalEligible)} eligible faculty × ${pool.percent}% = ${pool.exactText}, ${rw} to <span class="big">${n0(pool.seats)}</span> ${plural(pool.seats, 'seat')}. Applicants: ${n0(ta)}.`;
+    const big = `<span class="big">${n0(pool.seats)}</span> ${plural(pool.seats, 'seat')}`;
+    $('ruleOut').innerHTML = `${n0(pool.totalEligible)} eligible faculty × ${pool.percent}% = ${pool.exactText}, ${rw} to ` +
+      (pool.minimum ? `${n0(pool.rounded)} ${plural(pool.rounded, 'seat')}. ${minimumSentence(pool, big)}` : big) + `. Applicants: ${n0(ta)}.`;
     $('results').innerHTML = renderResults(pool, res, cs, ta);
+  }
+
+  /* Follows a sentence ending "rounded … to N seats." when there is a minimum; says which of the two is the pool. */
+  function minimumSentence(pool, seatsHtml) {
+    const m = `${n0(pool.minimum)} ${plural(pool.minimum, 'seat')}`;
+    return pool.rounded < pool.minimum
+      ? `That is fewer than the minimum of ${m}, so the pool is ${seatsHtml}`
+      : `That is at least the minimum of ${m}, so the pool is ${seatsHtml}`;
   }
 
   function statusCell(r) {
@@ -797,7 +810,7 @@ Library,18,2,0.333</pre>
     const rec = [];
     rec.push(`<li class="head">Seat pool</li>`);
     rec.push(`<li>Eligible faculty: ${cs.map(c => `${esc(c.name)} ${n0(c.eligible)}`).join('; ')}. Total ${n0(pool.totalEligible)}.</li>`);
-    rec.push(`<li>${n0(pool.totalEligible)} × ${pool.percent}% = ${pool.exact.toFixed(4)}; ${ { down: 'rounded down', nearest: 'rounded to nearest', up: 'rounded up' }[pool.rounding] } to ${n0(pool.seats)} ${plural(pool.seats, 'seat')}.</li>`);
+    rec.push(`<li>${n0(pool.totalEligible)} × ${pool.percent}% = ${pool.exact.toFixed(4)}; ${ { down: 'rounded down', nearest: 'rounded to nearest', up: 'rounded up' }[pool.rounding] } to ${n0(pool.rounded)} ${plural(pool.rounded, 'seat')}.${pool.minimum ? ` ${minimumSentence(pool, `${n0(pool.seats)} ${plural(pool.seats, 'seat')}`)}.` : ''}</li>`);
     rec.push(`<li>Applicants: ${cs.map(c => `${esc(c.name)} ${c.applicants}`).join('; ')}. Total ${n0(ta)}.</li>`);
     rec.push(`<li>Tie rule: a tie at the cutoff goes to the larger carry forward, then to ${TIE_METHOD_LABEL[res.method]}. List order: ${cs.map((c, i) => `${i + 1} ${esc(c.name)}`).join('; ')}.</li>`);
     res.rounds.forEach(rd => {

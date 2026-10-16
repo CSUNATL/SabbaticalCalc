@@ -230,4 +230,12 @@ The Node and Playwright installs from September 15 were gone from this machine a
 
 Session 4's work was checked and committed. `npm run check` passed 48 tests with both `dist/` files fresh. Jeff chose the two-commit split: `MethodAnalysis.md` alone, then the Webster file with its logic, page, build, tests, tooling and documentation. Both were pushed to `origin/main`. `tools/screenshot.py` was not re-run because no UI had changed since session 4's pass. Playwright was missing again from both Python installs on this machine (Scoop's 3.11 on PATH, and 3.14 via `py`). Reinstall it with `py -3.14 -m pip install --user playwright` and `py -3.14 -m playwright install chromium`, then run the tool with `py -3.14 tools/screenshot.py`.
 
+### Minimum of 42 seats (same session)
+
+Jeff added a policy caveat he had left out: the union contract sets the pool at 12% of eligible faculty, and CSUN's Section 600 administrative policy adds that there be no fewer than 42 sabbaticals. The pool is now the greater of the rounded 12% and 42. `computeSeatPool` takes a fourth argument, `minimum` (default 0, so existing calls are unchanged), and returns `rounded` (the percentage's result) alongside `seats` (the pool). The minimum is applied after rounding and changes nothing about how the pool is divided.
+
+Decision made without instruction: the minimum is an input on the page beside the percentage ("…to a whole number, but no fewer than [42] seats"), default 42, rather than a fixed number, because the percentage and rounding rule are editable and the page is meant to work elsewhere; 0 means no minimum. Like the percentage, it is not in the inputs CSV and loading a file leaves it as set. The pool statement under the inputs and the step-by-step record each add a sentence saying which applied ("That is fewer than the minimum of 42 seats, so the pool is 42 seats"), and the results CSV gains `Rounded` and `Minimum` fields before `Seats`. The method description cites Section 600. The test data (46 seats) is above the minimum, so its results are unchanged. Applies to both deliverables identically; no method block was touched.
+
+Tests: 50. `tools/screenshot.py` sets the minimum to 0 for its three-seat tie check, and checks both sentences and the validation message. Playwright was reinstalled for Python 3.14 this session, as above.
+
 The open items and suggested next steps from session 4, 2 to 4, still stand.

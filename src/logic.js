@@ -1,23 +1,25 @@
 /* ---------- Allocation logic (pure; no DOM) ---------- */
 
-/* Seat pool = total eligible faculty × percent ÷ 100, rounded by `rounding` ('up' | 'nearest' | 'down').
-   The percentage is taken in ten-thousandths of a percent (four decimal places) and the product is
-   formed in integer arithmetic, so 375 × 18.4% is exactly 69 and never 68.999…. "Nearest" rounds an
-   exact half up. `exactText` is the exact product written out in decimal (at most six places). */
+/* Seat pool = total eligible faculty × percent ÷ 100, rounded by `rounding` ('up' | 'nearest' | 'down'),
+   but never fewer than `minimum` seats (0 = no minimum). `rounded` is the percentage's result before the
+   minimum is applied; `seats` is the pool. The percentage is taken in ten-thousandths of a percent
+   (four decimal places) and the product is formed in integer arithmetic, so 375 × 18.4% is exactly 69
+   and never 68.999…. "Nearest" rounds an exact half up. `exactText` is the exact product written out in decimal (at most six places). */
 const PERCENT_SCALE = 10000;                      // percent in ten-thousandths: 12.3456% -> 123456
 const POOL_DEN = 100 * PERCENT_SCALE;             // exact product = totalEligible × percentScaled ÷ POOL_DEN
-function computeSeatPool(colleges, percent, rounding) {
+function computeSeatPool(colleges, percent, rounding, minimum = 0) {
   const totalEligible = colleges.reduce((s, c) => s + c.eligible, 0);
   const percentScaled = Math.round(percent * PERCENT_SCALE);
   const num = totalEligible * percentScaled;
   const rem = num % POOL_DEN;
   const whole = (num - rem) / POOL_DEN;
-  let seats;
-  if (rounding === 'down') seats = whole;
-  else if (rounding === 'nearest') seats = rem * 2 >= POOL_DEN ? whole + 1 : whole;
-  else seats = rem > 0 ? whole + 1 : whole;
+  let rounded;
+  if (rounding === 'down') rounded = whole;
+  else if (rounding === 'nearest') rounded = rem * 2 >= POOL_DEN ? whole + 1 : whole;
+  else rounded = rem > 0 ? whole + 1 : whole;
   const exactText = rem === 0 ? String(whole) : `${whole}.${String(rem).padStart(6, '0').replace(/0+$/, '')}`;
-  return { totalEligible, percent, percentScaled, exact: num / POOL_DEN, exactText, seats, rounding };
+  const seats = Math.max(rounded, minimum);
+  return { totalEligible, percent, percentScaled, exact: num / POOL_DEN, exactText, rounded, minimum, seats, rounding };
 }
 
 /* Hamilton (largest remainder) apportionment of `seats` among `parts`.
@@ -250,10 +252,11 @@ function allocate(colleges, seats, method, apportionment) {
   return { seats, rounds, final, unallocated, stopReason, totalAwarded: awarded.reduce((s, a) => s + a, 0), method, apportionment, unresolvedRounds };
 }
 
-function validate(colleges, percent) {
+function validate(colleges, percent, minimum = 0) {
   const errors = [];
   if (!(percent >= 0 && percent <= 100)) errors.push('Seat percentage must be between 0 and 100.');
   else if (Math.abs(percent * PERCENT_SCALE - Math.round(percent * PERCENT_SCALE)) > 1e-6) errors.push('Seat percentage can have at most four decimal places.');
+  if (!(Number.isInteger(minimum) && minimum >= 0)) errors.push('Minimum number of seats must be a whole number of 0 or more (enter 0 for no minimum).');
   if (colleges.length === 0) errors.push('Add at least one college.');
   const seen = new Map();
   colleges.forEach((c, i) => {
