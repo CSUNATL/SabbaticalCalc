@@ -49,6 +49,7 @@ function hamilton(parts, seats, method) {
       quota: num / total,
       whole,
       remNum, fraction: remNum / total,
+      tieFraction: remNum / total,                  // what a college loses if it loses a tie at the cutoff
       remainderSeat: 0, rank: 0, allocated: whole, tie: '',
     };
   });
@@ -76,11 +77,99 @@ function hamilton(parts, seats, method) {
       else tieDecidedBy = steps.find(step => TIE_STEP_CMP[step](w, l) !== 0) || 'unresolved';
     }
   }
-  return { total, wholeSum, remainderSeats, rows, order, ties, tieDecidedBy, unresolved: tieDecidedBy === 'unresolved', method };
+  return { apportionment: 'hamilton', total, wholeSum, remainderSeats, rows, order, ties, tieDecidedBy, unresolved: tieDecidedBy === 'unresolved', method };
 }
 
-function allocate(colleges, seats, method) {
+/* Webster (Sainte-Laguë, major fractions) apportionment of `seats` among `parts`: the same inputs,
+   tie rules and reporting as hamilton(), used by the Webster build of the page.
+   A college's claim to its next seat is eligible ÷ (seats held + ½). Seats are awarded one at a time to
+   the strongest claim, which gives the same result as dividing every college's eligible faculty by one
+   common divisor and rounding to nearest. Claims are compared exactly:
+     e1 ÷ (a1 + ½) > e2 ÷ (a2 + ½)  ⇔  e1 × (2·a2 + 1) > e2 × (2·a1 + 1).
+   The cutoff is the weakest claim that won a seat (the last award) against the strongest claim that did
+   not (`runnerUp`). Any divisor above the loser's claim and up to the winner's reproduces the allocation
+   by rounding to nearest; `divisor` is the one with the fewest decimal places in that range, for the
+   check shown on the page, and each row's `quotient` is eligible ÷ divisor. When the two claims are
+   equal the tie is broken like hamilton()'s (carry forward, then the steps of `method`, else unresolved
+   and placed provisionally with the college listed higher), `divisor` is the cutoff claim itself, and a
+   college that loses the tie is exactly half a seat short at that divisor, so tieFraction is 0.5.
+   `awards` lists every seat in order with the claim that won it and the strongest competing claim. */
+const APPORTIONMENTS = ['hamilton', 'webster'];
+function webster(parts, seats, method) {
   if (!TIE_METHODS.includes(method)) method = 'eligible';
+  const steps = TIE_STEPS[method];
+  const total = parts.reduce((s, p) => s + p.eligible, 0);
+  const rows = parts.map(p => ({
+    idx: p.idx, name: p.name, eligible: p.eligible, carry: p.carry || 0,
+    share: p.eligible / total,
+    quota: seats * p.eligible / total,
+    allocated: 0, tie: '', tieFraction: 0.5,
+    lastClaim: null, nextClaim: 0, quotient: 0,
+  }));
+  // Orders two colleges by their current claims: larger claim first, then the tie rules, then list
+  // position as the provisional placement of anything still equal.
+  const cmp = (a, b) => {
+    let d = b.eligible * (2 * a.allocated + 1) - a.eligible * (2 * b.allocated + 1);
+    d = d || carryKey(b.carry) - carryKey(a.carry);
+    for (const step of steps) d = d || TIE_STEP_CMP[step](a, b);
+    return d || a.idx - b.idx;
+  };
+  const claimOf = r => r.eligible / (r.allocated + 0.5);
+  const snapshot = r => ({ idx: r.idx, name: r.name, eligible: r.eligible, seats: r.allocated, claim: claimOf(r) });
+  const awards = [];
+  for (let k = 1; k <= seats && rows.length; k++) {
+    const ranked = rows.slice().sort(cmp);
+    const w = ranked[0];
+    awards.push({
+      seat: k, idx: w.idx, name: w.name, eligible: w.eligible, seatsBefore: w.allocated, seatsAfter: w.allocated + 1,
+      claim: claimOf(w), runnerUp: ranked[1] ? snapshot(ranked[1]) : null,
+    });
+    w.allocated++;
+  }
+  const last = awards.length ? awards[awards.length - 1] : null;      // weakest winning claim: eW ÷ (aW − ½)
+  const ru = rows.length ? rows.slice().sort(cmp)[0] : null;          // strongest losing claim: eL ÷ (aL + ½)
+  rows.forEach(r => {
+    r.lastClaim = r.allocated ? r.eligible / (r.allocated - 0.5) : null;
+    r.nextClaim = claimOf(r);
+  });
+  // A tie at the cutoff: the last award's claim equals the strongest remaining claim (exact integer test).
+  const ties = [];
+  let tieDecidedBy = '';
+  if (last && ru && last.eligible * (2 * ru.allocated + 1) === ru.eligible * (2 * last.seatsAfter - 1)) {
+    const denW = 2 * last.seatsAfter - 1;
+    rows.forEach(r => {
+      if (r.allocated && r.eligible * denW === last.eligible * (2 * r.allocated - 1)) r.tie = 'won';   // its last claim is the cutoff
+      else if (r.eligible * denW === last.eligible * (2 * r.allocated + 1)) r.tie = 'lost';           // its next claim is the cutoff
+    });
+    ties.push(...rows.filter(r => r.tie).map(r => r.name));
+    const w = rows.find(r => r.idx === last.idx);
+    if (carryKey(w.carry) !== carryKey(ru.carry)) tieDecidedBy = 'carry';
+    else tieDecidedBy = steps.find(step => TIE_STEP_CMP[step](w, ru) !== 0) || 'unresolved';
+  }
+  // The divisor for the check: the number with the fewest decimal places that is above the strongest
+  // losing claim and not above the weakest winning claim (integer arithmetic on the doubled claims).
+  let divisor = null, divisorText = '';
+  if (ru && !ties.length) {
+    for (let k = 0; k <= 9 && divisor === null; k++) {
+      const p = 10 ** k;
+      const m = Math.floor(2 * ru.eligible * p / (2 * ru.allocated + 1)) + 1;   // smallest m with m ÷ p > eL ÷ (aL + ½)
+      if (!last || m * (2 * last.seatsAfter - 1) <= 2 * last.eligible * p) { divisor = m / p; divisorText = divisor.toFixed(k); }
+    }
+  }
+  if (divisor === null && last) { divisor = last.claim; divisorText = divisor.toFixed(3); }
+  rows.forEach(r => { r.quotient = divisor ? r.eligible / divisor : 0; });
+  return {
+    apportionment: 'webster', total, rows, awards,
+    lastAward: last, runnerUp: ru ? snapshot(ru) : null,
+    divisor, divisorText, divisorIsCutoff: ties.length > 0,
+    ties, tieDecidedBy, unresolved: tieDecidedBy === 'unresolved', method,
+  };
+}
+
+function allocate(colleges, seats, method, apportionment) {
+  if (!TIE_METHODS.includes(method)) method = 'eligible';
+  if (!APPORTIONMENTS.includes(apportionment)) apportionment = 'hamilton';
+  const apportion = apportionment === 'webster' ? webster : hamilton;
   const n = colleges.length;
   const demand = colleges.map(c => c.applicants);
   const awarded = colleges.map(() => 0);
@@ -109,7 +198,7 @@ function allocate(colleges, seats, method) {
     if (round > n + 1) { stopReason = 'Stopped: round limit exceeded (this should not happen; check inputs).'; unallocated = pool; break; }
 
     const parts = partIdx.map(i => ({ idx: i, name: colleges[i].name, eligible: colleges[i].eligible, carry: carryNow[i] }));
-    const h = hamilton(parts, pool, method);
+    const h = apportion(parts, pool, method);
     let surplusTotal = 0;
     const settledNow = [];
     h.rows.forEach(r => {
@@ -123,15 +212,17 @@ function allocate(colleges, seats, method) {
       r.settled = demand[r.idx] === 0;
       if (r.settled && settledIn[r.idx] === null) { settledIn[r.idx] = round; settledNow.push(r.name); }
       if (r.tie) {
-        tieEvents[r.idx].push({ round, result: r.tie, fraction: r.fraction, decidedBy: h.tieDecidedBy });
+        tieEvents[r.idx].push({ round, result: r.tie, fraction: r.tieFraction, decidedBy: h.tieDecidedBy });
         if (r.tie === 'won') carryNow[r.idx] = 0;
       }
       surplusTotal += r.surplus;
     });
+    // The round record carries everything the apportionment returned (rows, order, ties, and for Webster
+    // the awards, cutoff and divisor) plus the matching to applicants.
+    const { total, ...apportioned } = h;
     rounds.push({
-      round, pool, participants: partIdx.length, totalEligible: h.total,
-      wholeSum: h.wholeSum, remainderSeats: h.remainderSeats,
-      rows: h.rows, order: h.order, ties: h.ties, tieDecidedBy: h.tieDecidedBy, unresolved: h.unresolved, method,
+      round, pool, participants: partIdx.length, totalEligible: total,
+      ...apportioned,
       funded: pool - surplusTotal, surplus: surplusTotal, settledNow,
     });
     pool = surplusTotal;
@@ -156,7 +247,7 @@ function allocate(colleges, seats, method) {
     };
   });
   const unresolvedRounds = rounds.filter(rd => rd.unresolved).map(rd => rd.round);
-  return { seats, rounds, final, unallocated, stopReason, totalAwarded: awarded.reduce((s, a) => s + a, 0), method, unresolvedRounds };
+  return { seats, rounds, final, unallocated, stopReason, totalAwarded: awarded.reduce((s, a) => s + a, 0), method, apportionment, unresolvedRounds };
 }
 
 function validate(colleges, percent) {
@@ -265,5 +356,5 @@ function formatInputsCsv(colleges) {
 
 /* Node export for tests; ignored in the browser. */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { computeSeatPool, hamilton, allocate, validate, TIE_METHODS, parseInputsCsv, formatInputsCsv };
+  module.exports = { computeSeatPool, hamilton, webster, allocate, validate, TIE_METHODS, APPORTIONMENTS, parseInputsCsv, formatInputsCsv };
 }

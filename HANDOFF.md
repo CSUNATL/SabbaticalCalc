@@ -188,3 +188,46 @@ Built: `parseInputsCsv` and `formatInputsCsv` in `src/logic.js` (pure, tested: h
 2. Confirm R7.1 and R7.2 against the policy text and set the defaults accordingly (percent, rounding, tie rule).
 3. Decide R7.5 (institution name, academic year, sign-off block in print); markup and CSS only.
 4. Decide whether `codex/` should stay in the repository now that the two implementations have diverged.
+
+## Fourth session: Claude Code, September 18, 2026
+
+### Is Hamilton the right method?
+
+Jeff had been reading about the Alabama paradox and asked whether Webster, Huntington-Hill or another method would be fairer for CSUN. The answer is `MethodAnalysis.md`, written at his request. In short: Webster (Sainte-Laguë) is the method the literature recommends and is free of the Alabama, population and new-states paradoxes; Huntington-Hill is a poor fit because it guarantees every college a seat and has no solution when the pool is smaller than the number of colleges, which is the normal state of the tool's later rounds; Jefferson and Adams are biased. At CSUN's scale, Hamilton and Webster give the same result on the test data; over 20,000 random campuses they differ in about one year in six, Hamilton shows the Alabama paradox in 3.9 percent of pool-grows-by-one cases and the population paradox in 0.36 percent of year-to-year transitions, and Webster never left quota. The larger finding was that the round structure itself tilts the redistribution toward large colleges (a small later-round pool goes to the largest headcounts regardless of how round 1 rounded them: in the test data Counseling's returned seat goes to Social & Behavioral Sciences at 9.03 quota rather than to Nazarian at 4.58), and that a single pass of Webster capped at applicants removes that and is simpler to audit. The document recommends Webster in a single capped pass, with Webster inside the existing rounds as the minimal change.
+
+### The Webster file
+
+Jeff asked for `sabbatical_webster.html`, the same as the current file except with Webster's method. Read as the minimal change: Webster replaces Hamilton inside each round, and rounds, caps, settlement, the three tie rules, the unresolved flag and the carry-forward mechanism are unchanged. The single-pass version was not built.
+
+Built as one source, two deliverables. `src/logic.js` gained `webster(parts, seats, method)` with the same inputs, tie rules and reporting as `hamilton`, and `allocate` takes a fourth argument, the apportionment. The page source holds both methods' text and rendering code in marked blocks (`<!--[hamilton]-->…<!--[/hamilton]-->`, `/*[webster]*/…/*[/webster]*/`); `build.js` keeps one method's blocks and removes the other's, sets the page's `APPORTIONMENT` constant, and writes `dist/sabbatical-allocation.html` and `dist/sabbatical_webster.html`. Everything outside the blocks is shared, so a UI fix is made once. Both files carry both apportionment functions; only the page text and the rendering strategy (`METHODS.hamilton` / `METHODS.webster` in the UI script) differ. The Hamilton file's behavior and text are unchanged.
+
+How Webster is presented to the committee: seats are handed out one at a time to the strongest claim, eligible ÷ (seats held + ½); the record lists every award with the claim that won it and the strongest competing claim; the narrative names the weakest winning claim and the strongest losing claim (the cutoff) and one divisor between them, and the round table shows each college's eligible faculty ÷ that divisor rounded to nearest, so the whole round can be checked with one division per college. The divisor shown is the one with the fewest decimal places in the valid range, found in integer arithmetic (8.5 for the test data's round 1, 129 for its round 2). At a tie the divisor is the cutoff claim itself and the tied colleges' quotients sit exactly on a half. Claims are compared exactly as `e1 × (2·a2 + 1)` against `e2 × (2·a1 + 1)`.
+
+Decision made without instruction and flagged: the carry forward for a tie lost under Webster is half a seat, because at the deciding divisor the losing college's share is exactly halfway between two whole numbers. Hamilton's rule (the fractional part lost) has no other natural counterpart. Recorded in R4.8 and R7.6.
+
+Tests: 48, including a house-monotonicity fuzz (adding a seat never takes one away), the divisor check over random inputs, tie consistency, and the R4.7 invariants under Webster. `test/build.test.js` checks both deliverables and that no build marker survives. `tools/screenshot.py` renders both files and, for Webster, checks the divisor sentence and the seat-by-seat record; it also now exercises an unresolved tie and its resolution by list order on both pages.
+
+### Environment
+
+The Node and Playwright installs from September 15 were gone from this machine at the start of the session (a Node 24 runtime under JetBrains' agent folder served for the first checks). Jeff reinstalled Node 24 with npm during the session; Playwright and Chromium were reinstalled with `python -m pip install --user playwright` and `python -m playwright install chromium` for Python 3.14. A freshly opened shell may need its PATH refreshed before `node` is found.
+
+### State at end of session 4
+
+- `npm run check`: 48 tests passing, both `dist/` files fresh from the current `src/`. `python tools/screenshot.py` passes for both pages: no script errors, no table wider than 1280px. The Webster page was also looked at in `full-webster.png`.
+- **Nothing from this session is committed.** The working tree holds all of it, uncommitted, on `main` at commit 70860ef: `MethodAnalysis.md` and `dist/sabbatical_webster.html` are new files; `src/logic.js`, `src/sabbatical-allocation.html`, `build.js`, both test files, `tools/screenshot.py`, `.gitignore`, `README.md`, `ARCHITECTURE.md`, `REQUIREMENTS.md`, `CLAUDE.md` and this file are modified. Jeff stopped the session before deciding whether to commit. Run `npm run check` first; if it passes, one commit for the analysis and one for the Webster file would be the natural split, or a single commit if that is simpler.
+- The Hamilton deliverable was rebuilt (its UI script was restructured around `METHODS`), but its text and behavior are unchanged; the diff against the committed file is code only.
+- `codex/` was not touched.
+- Open: R7.6 (which method to adopt; whether to move to the single capped pass; whether half a seat is the right carry forward under Webster), and everything listed at the end of session 3.
+
+### Suggested next steps
+
+1. Review and commit the working tree (above).
+2. Put both files in front of the committee with the same year's inputs and compare the round narratives; the Webster one should be no harder to follow.
+3. If the Senate prefers Webster, decide on the single capped pass (MethodAnalysis.md, "The rounds matter more"); it changes the policy text in REQUIREMENTS.md sections 3 and 4 and the page's method description, and would replace the round tables with one seat-by-seat table plus an entitlement table.
+4. Confirm the half-seat carry forward, or replace it with a plain count of ties lost.
+
+## Fifth session: Claude Code, October 16, 2026
+
+Session 4's work was checked and committed. `npm run check` passed 48 tests with both `dist/` files fresh. Jeff chose the two-commit split: `MethodAnalysis.md` alone, then the Webster file with its logic, page, build, tests, tooling and documentation. Both were pushed to `origin/main`. `tools/screenshot.py` was not re-run because no UI had changed since session 4's pass. Playwright was missing again from both Python installs on this machine (Scoop's 3.11 on PATH, and 3.14 via `py`). Reinstall it with `py -3.14 -m pip install --user playwright` and `py -3.14 -m playwright install chromium`, then run the tool with `py -3.14 tools/screenshot.py`.
+
+The open items and suggested next steps from session 4, 2 to 4, still stand.

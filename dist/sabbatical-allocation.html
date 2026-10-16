@@ -306,6 +306,7 @@ function hamilton(parts, seats, method) {
       quota: num / total,
       whole,
       remNum, fraction: remNum / total,
+      tieFraction: remNum / total,                  // what a college loses if it loses a tie at the cutoff
       remainderSeat: 0, rank: 0, allocated: whole, tie: '',
     };
   });
@@ -333,11 +334,99 @@ function hamilton(parts, seats, method) {
       else tieDecidedBy = steps.find(step => TIE_STEP_CMP[step](w, l) !== 0) || 'unresolved';
     }
   }
-  return { total, wholeSum, remainderSeats, rows, order, ties, tieDecidedBy, unresolved: tieDecidedBy === 'unresolved', method };
+  return { apportionment: 'hamilton', total, wholeSum, remainderSeats, rows, order, ties, tieDecidedBy, unresolved: tieDecidedBy === 'unresolved', method };
 }
 
-function allocate(colleges, seats, method) {
+/* Webster (Sainte-Laguë, major fractions) apportionment of `seats` among `parts`: the same inputs,
+   tie rules and reporting as hamilton(), used by the Webster build of the page.
+   A college's claim to its next seat is eligible ÷ (seats held + ½). Seats are awarded one at a time to
+   the strongest claim, which gives the same result as dividing every college's eligible faculty by one
+   common divisor and rounding to nearest. Claims are compared exactly:
+     e1 ÷ (a1 + ½) > e2 ÷ (a2 + ½)  ⇔  e1 × (2·a2 + 1) > e2 × (2·a1 + 1).
+   The cutoff is the weakest claim that won a seat (the last award) against the strongest claim that did
+   not (`runnerUp`). Any divisor above the loser's claim and up to the winner's reproduces the allocation
+   by rounding to nearest; `divisor` is the one with the fewest decimal places in that range, for the
+   check shown on the page, and each row's `quotient` is eligible ÷ divisor. When the two claims are
+   equal the tie is broken like hamilton()'s (carry forward, then the steps of `method`, else unresolved
+   and placed provisionally with the college listed higher), `divisor` is the cutoff claim itself, and a
+   college that loses the tie is exactly half a seat short at that divisor, so tieFraction is 0.5.
+   `awards` lists every seat in order with the claim that won it and the strongest competing claim. */
+const APPORTIONMENTS = ['hamilton', 'webster'];
+function webster(parts, seats, method) {
   if (!TIE_METHODS.includes(method)) method = 'eligible';
+  const steps = TIE_STEPS[method];
+  const total = parts.reduce((s, p) => s + p.eligible, 0);
+  const rows = parts.map(p => ({
+    idx: p.idx, name: p.name, eligible: p.eligible, carry: p.carry || 0,
+    share: p.eligible / total,
+    quota: seats * p.eligible / total,
+    allocated: 0, tie: '', tieFraction: 0.5,
+    lastClaim: null, nextClaim: 0, quotient: 0,
+  }));
+  // Orders two colleges by their current claims: larger claim first, then the tie rules, then list
+  // position as the provisional placement of anything still equal.
+  const cmp = (a, b) => {
+    let d = b.eligible * (2 * a.allocated + 1) - a.eligible * (2 * b.allocated + 1);
+    d = d || carryKey(b.carry) - carryKey(a.carry);
+    for (const step of steps) d = d || TIE_STEP_CMP[step](a, b);
+    return d || a.idx - b.idx;
+  };
+  const claimOf = r => r.eligible / (r.allocated + 0.5);
+  const snapshot = r => ({ idx: r.idx, name: r.name, eligible: r.eligible, seats: r.allocated, claim: claimOf(r) });
+  const awards = [];
+  for (let k = 1; k <= seats && rows.length; k++) {
+    const ranked = rows.slice().sort(cmp);
+    const w = ranked[0];
+    awards.push({
+      seat: k, idx: w.idx, name: w.name, eligible: w.eligible, seatsBefore: w.allocated, seatsAfter: w.allocated + 1,
+      claim: claimOf(w), runnerUp: ranked[1] ? snapshot(ranked[1]) : null,
+    });
+    w.allocated++;
+  }
+  const last = awards.length ? awards[awards.length - 1] : null;      // weakest winning claim: eW ÷ (aW − ½)
+  const ru = rows.length ? rows.slice().sort(cmp)[0] : null;          // strongest losing claim: eL ÷ (aL + ½)
+  rows.forEach(r => {
+    r.lastClaim = r.allocated ? r.eligible / (r.allocated - 0.5) : null;
+    r.nextClaim = claimOf(r);
+  });
+  // A tie at the cutoff: the last award's claim equals the strongest remaining claim (exact integer test).
+  const ties = [];
+  let tieDecidedBy = '';
+  if (last && ru && last.eligible * (2 * ru.allocated + 1) === ru.eligible * (2 * last.seatsAfter - 1)) {
+    const denW = 2 * last.seatsAfter - 1;
+    rows.forEach(r => {
+      if (r.allocated && r.eligible * denW === last.eligible * (2 * r.allocated - 1)) r.tie = 'won';   // its last claim is the cutoff
+      else if (r.eligible * denW === last.eligible * (2 * r.allocated + 1)) r.tie = 'lost';           // its next claim is the cutoff
+    });
+    ties.push(...rows.filter(r => r.tie).map(r => r.name));
+    const w = rows.find(r => r.idx === last.idx);
+    if (carryKey(w.carry) !== carryKey(ru.carry)) tieDecidedBy = 'carry';
+    else tieDecidedBy = steps.find(step => TIE_STEP_CMP[step](w, ru) !== 0) || 'unresolved';
+  }
+  // The divisor for the check: the number with the fewest decimal places that is above the strongest
+  // losing claim and not above the weakest winning claim (integer arithmetic on the doubled claims).
+  let divisor = null, divisorText = '';
+  if (ru && !ties.length) {
+    for (let k = 0; k <= 9 && divisor === null; k++) {
+      const p = 10 ** k;
+      const m = Math.floor(2 * ru.eligible * p / (2 * ru.allocated + 1)) + 1;   // smallest m with m ÷ p > eL ÷ (aL + ½)
+      if (!last || m * (2 * last.seatsAfter - 1) <= 2 * last.eligible * p) { divisor = m / p; divisorText = divisor.toFixed(k); }
+    }
+  }
+  if (divisor === null && last) { divisor = last.claim; divisorText = divisor.toFixed(3); }
+  rows.forEach(r => { r.quotient = divisor ? r.eligible / divisor : 0; });
+  return {
+    apportionment: 'webster', total, rows, awards,
+    lastAward: last, runnerUp: ru ? snapshot(ru) : null,
+    divisor, divisorText, divisorIsCutoff: ties.length > 0,
+    ties, tieDecidedBy, unresolved: tieDecidedBy === 'unresolved', method,
+  };
+}
+
+function allocate(colleges, seats, method, apportionment) {
+  if (!TIE_METHODS.includes(method)) method = 'eligible';
+  if (!APPORTIONMENTS.includes(apportionment)) apportionment = 'hamilton';
+  const apportion = apportionment === 'webster' ? webster : hamilton;
   const n = colleges.length;
   const demand = colleges.map(c => c.applicants);
   const awarded = colleges.map(() => 0);
@@ -366,7 +455,7 @@ function allocate(colleges, seats, method) {
     if (round > n + 1) { stopReason = 'Stopped: round limit exceeded (this should not happen; check inputs).'; unallocated = pool; break; }
 
     const parts = partIdx.map(i => ({ idx: i, name: colleges[i].name, eligible: colleges[i].eligible, carry: carryNow[i] }));
-    const h = hamilton(parts, pool, method);
+    const h = apportion(parts, pool, method);
     let surplusTotal = 0;
     const settledNow = [];
     h.rows.forEach(r => {
@@ -380,15 +469,17 @@ function allocate(colleges, seats, method) {
       r.settled = demand[r.idx] === 0;
       if (r.settled && settledIn[r.idx] === null) { settledIn[r.idx] = round; settledNow.push(r.name); }
       if (r.tie) {
-        tieEvents[r.idx].push({ round, result: r.tie, fraction: r.fraction, decidedBy: h.tieDecidedBy });
+        tieEvents[r.idx].push({ round, result: r.tie, fraction: r.tieFraction, decidedBy: h.tieDecidedBy });
         if (r.tie === 'won') carryNow[r.idx] = 0;
       }
       surplusTotal += r.surplus;
     });
+    // The round record carries everything the apportionment returned (rows, order, ties, and for Webster
+    // the awards, cutoff and divisor) plus the matching to applicants.
+    const { total, ...apportioned } = h;
     rounds.push({
-      round, pool, participants: partIdx.length, totalEligible: h.total,
-      wholeSum: h.wholeSum, remainderSeats: h.remainderSeats,
-      rows: h.rows, order: h.order, ties: h.ties, tieDecidedBy: h.tieDecidedBy, unresolved: h.unresolved, method,
+      round, pool, participants: partIdx.length, totalEligible: total,
+      ...apportioned,
       funded: pool - surplusTotal, surplus: surplusTotal, settledNow,
     });
     pool = surplusTotal;
@@ -413,7 +504,7 @@ function allocate(colleges, seats, method) {
     };
   });
   const unresolvedRounds = rounds.filter(rd => rd.unresolved).map(rd => rd.round);
-  return { seats, rounds, final, unallocated, stopReason, totalAwarded: awarded.reduce((s, a) => s + a, 0), method, unresolvedRounds };
+  return { seats, rounds, final, unallocated, stopReason, totalAwarded: awarded.reduce((s, a) => s + a, 0), method, apportionment, unresolvedRounds };
 }
 
 function validate(colleges, percent) {
@@ -522,6 +613,10 @@ function formatInputsCsv(colleges) {
 
 /* ---------- UI ---------- */
 (function () {
+  /* Which apportionment this page uses. build.js writes 'hamilton' into dist/sabbatical-allocation.html and
+     'webster' into dist/sabbatical_webster.html, and keeps only that method's marked blocks of markup and script. */
+  const APPORTIONMENT = 'hamilton';
+
   /* The page opens with the CSUN colleges listed and counts at zero; the committee enters
      each year's eligible faculty and applicants. Names can still be edited, added, or removed. */
   const CSUN_COLLEGES = [
@@ -694,7 +789,7 @@ function formatInputsCsv(colleges) {
     const r = new FileReader();
     r.onload = () => {
       try {
-        const text = String(r.result).replace(/^\uFEFF/, '');
+        const text = String(r.result).replace(/^﻿/, '');
         let colleges;
         if (/^\s*\{/.test(text)) {                       // an inputs file saved in JSON format by an earlier version of this page
           let d;
@@ -721,15 +816,18 @@ function formatInputsCsv(colleges) {
     if (!lastResult) return;
     const { pool, res } = lastResult;
     const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+    const row = cells => cells.map(q).join(',');
     const lines = [];
-    lines.push(['Seat pool', 'Total eligible', pool.totalEligible, 'Percent', pool.percent, 'Exact', pool.exactText, 'Rounding', pool.rounding, 'Seats', pool.seats, 'Tie rule after carry forward', TIE_METHOD_LABEL[res.method]].map(q).join(','));
+    lines.push(row(['Method', METHOD.label, 'Seat pool', 'Total eligible', pool.totalEligible, 'Percent', pool.percent, 'Exact', pool.exactText, 'Rounding', pool.rounding, 'Seats', pool.seats, 'Tie rule after carry forward', TIE_METHOD_LABEL[res.method]]));
     lines.push('');
-    lines.push(['Round', 'College', 'Eligible', 'Share of eligible', 'Exact quota arithmetic', 'Exact quota', 'Whole seats', 'Fraction', 'Rank', 'Extra seat', 'Allocated', 'Applicants awaiting', 'Funded this round', 'Returned to pool', 'Settled', 'Tie at cutoff', 'Tie decided by', 'Carry forward used', 'Position in list'].map(q).join(','));
-    res.rounds.forEach(rd => rd.rows.forEach(r => lines.push([rd.round, r.name, r.eligible, r.share, `${rd.pool} × ${r.eligible} ÷ ${rd.totalEligible}`, r.quota, r.whole, r.fraction, r.rank, r.remainderSeat, r.allocated, r.demandBefore, r.funded, r.surplus, r.settled ? 'yes' : 'no', r.tie, r.tie ? rd.tieDecidedBy : '', r.carry, r.idx + 1].map(q).join(','))));
+    lines.push(row(METHOD.csvHeader));
+    res.rounds.forEach(rd => METHOD.csvRows(rd).forEach(cells => lines.push(row(cells))));
+    const extra = METHOD.csvExtra(res);
+    if (extra.length) { lines.push(''); extra.forEach(cells => lines.push(row(cells))); }
     lines.push('');
-    lines.push(['Final', 'College', 'Eligible', 'Applicants', 'Seats awarded', 'Unfunded applicants', 'Awarded by round', 'Carry forward entered', 'Ties this year', 'Carry forward next year'].map(q).join(','));
-    res.final.forEach(f => lines.push(['', f.name, f.eligible, f.applicants, f.awarded, f.unfunded, f.byRound.map(b => `R${b.round}:${b.seats}`).join(' '), f.carry, f.tieEvents.map(ev => `R${ev.round}:${ev.result}`).join(' '), f.carryNext].map(q).join(',')));
-    lines.push(['', 'Unallocated seats', res.unallocated].map(q).join(','));
+    lines.push(row(['Final', 'College', 'Eligible', 'Applicants', 'Seats awarded', 'Unfunded applicants', 'Awarded by round', 'Carry forward entered', 'Ties this year', 'Carry forward next year']));
+    res.final.forEach(f => lines.push(row(['', f.name, f.eligible, f.applicants, f.awarded, f.unfunded, f.byRound.map(b => `R${b.round}:${b.seats}`).join(' '), f.carry, f.tieEvents.map(ev => `R${ev.round}:${ev.result}`).join(' '), f.carryNext])));
+    lines.push(row(['', 'Unallocated seats', res.unallocated]));
     download('sabbatical-results.csv', lines.join('\r\n'), 'text/csv');
   });
 
@@ -749,7 +847,7 @@ function formatInputsCsv(colleges) {
     showErrors(errs);
     if (errs.length) { $('ruleOut').textContent = ''; $('results').innerHTML = ''; lastResult = null; return; }
     const pool = computeSeatPool(cs, state.percent, state.rounding);
-    const res = allocate(cs, pool.seats, state.tieMethod);
+    const res = allocate(cs, pool.seats, state.tieMethod, APPORTIONMENT);
     lastResult = { pool, res, colleges: cs, totalApplicants: ta };
     const rw = { down: 'rounded down', nearest: 'rounded to nearest', up: 'rounded up' }[pool.rounding];
     $('ruleOut').innerHTML = `${n0(pool.totalEligible)} eligible faculty × ${pool.percent}% = ${pool.exactText}, ${rw} to <span class="big">${n0(pool.seats)}</span> ${plural(pool.seats, 'seat')}. Applicants: ${n0(ta)}.`;
@@ -773,8 +871,7 @@ function formatInputsCsv(colleges) {
     const wonRows = rd.rows.filter(r => r.tie === 'won'), lostRows = rd.rows.filter(r => r.tie === 'lost');
     const won = wonRows.map(r => esc(r.name)), lost = lostRows.map(r => esc(r.name));
     const tied = rd.rows.filter(r => r.tie);
-    const frac = n3(tied[0].fraction);
-    const head = `Tie at the cutoff: ${list(rd.ties.map(esc))} have the same fractional part (${frac}).`;
+    const head = METHOD.tieHead(rd);
     if (rd.tieDecidedBy === 'unresolved') {
       return `${head} <strong>This tie is not resolved by the rule in use</strong> (carry forward, then ${TIE_METHOD_LABEL[rd.method]}): every step of the rule leaves ${tied.length === 2 ? 'both' : 'all of them'} equal. ${won.length === 1 ? 'The seat is' : 'The seats are'} shown provisionally going to <strong>${list(won)}</strong> because ${listed(tied)}. To decide it, choose a rule that uses list order under the inputs and put the colleges in the order the committee decides. Tied rows are marked in the table below.`;
     }
@@ -791,26 +888,80 @@ function formatInputsCsv(colleges) {
     const parts = f.tieEvents.map(ev => ev.result === 'won'
       ? `won a tie in round ${ev.round}${unres(ev)}, so the carry forward is reset to zero`
       : ev.counted
-        ? `lost a tie in round ${ev.round}${unres(ev)} (fraction ${n3(ev.fraction)}) and ends the year with ${f.unfunded} unfunded ${plural(f.unfunded, 'applicant')}, so ${n3(ev.fraction)} is added`
-        : `lost a tie in round ${ev.round}${unres(ev)} (fraction ${n3(ev.fraction)}) but every applicant was funded by the end of the year, so nothing is added`);
+        ? `lost a tie in round ${ev.round}${unres(ev)} (${METHOD.stake(ev)}) and ends the year with ${f.unfunded} unfunded ${plural(f.unfunded, 'applicant')}, so ${n3(ev.fraction)} is added`
+        : `lost a tie in round ${ev.round}${unres(ev)} (${METHOD.stake(ev)}) but every applicant was funded by the end of the year, so nothing is added`);
     return parts.join('; ').replace(/^./, ch => ch.toUpperCase()) + '.';
   }
 
+  /* ----- what differs between the two apportionment methods -----
+     Each entry renders a round's narrative, table, record lines and CSV rows from the round record that
+     allocate() returns, and supplies the few phrases elsewhere on the page that name the method's terms.
+     build.js keeps only the block for the method the deliverable uses. */
+  const METHODS = {};
+  METHODS.hamilton = {
+    label: 'Hamilton (largest remainder)',
+    sameThing: 'the same fractional part',
+    stake: ev => `fraction ${n3(ev.fraction)}`,
+    tieHead: rd => `Tie at the cutoff: ${list(rd.ties.map(esc))} have the same fractional part (${n3(rd.rows.find(r => r.tie).fraction)}).`,
+    carryIntro: `<p>A carry forward is the fractional part of a seat that a college lost in a tie. It is used only to break ties: when colleges have the same fractional part at the cutoff for an extra seat, the seat goes to the one with the larger carry forward. A college that loses a tie and ends the year with an unfunded applicant adds the fraction it lost to its carry forward. A college that wins a tie starts next year at zero. Every other carry forward is unchanged.</p>`,
+    roundsIntro: `<p>Each round divides a pool of seats among the colleges taking part. Columns read left to right in the order the calculation is done: quota, whole seats, extra seats by largest fraction, allocation, then matching to applicants. <a href="#method" class="methodlink">Read the full description of the process.</a></p>`,
+    narrative(rd, isFirst) {
+      const s = [];
+      const p = rd.rows;
+      if (isFirst) {
+        s.push(`All ${p.length} ${plural(p.length, 'college')} take part in round 1, including any with no applicants. The pool of ${n0(rd.pool)} ${plural(rd.pool, 'seat')} is divided in proportion to their ${n0(rd.totalEligible)} eligible faculty: each college's exact quota is ${n0(rd.pool)} × (eligible ÷ ${n0(rd.totalEligible)}).`);
+      } else {
+        s.push(`The ${n0(rd.pool)} ${plural(rd.pool, 'seat')} returned from round ${rd.round - 1} ${rd.pool === 1 ? 'is' : 'are'} divided among the ${p.length} ${plural(p.length, 'college')} that still ${p.length === 1 ? 'has' : 'have'} unfunded applicants (${list(p.map(r => esc(r.name)))}), in proportion to their ${n0(rd.totalEligible)} eligible faculty. Settled colleges do not take part.`);
+      }
+      if (rd.remainderSeats === 0) {
+        s.push(`The whole-number parts of the quotas add up to exactly ${n0(rd.wholeSum)}, so no extra seats need to be assigned.`);
+      } else {
+        const extras = rd.order.slice(0, rd.remainderSeats).map(r => `${esc(r.name)} (${n3(r.fraction)})`);
+        s.push(`The whole-number parts of the quotas account for ${n0(rd.wholeSum)} ${plural(rd.wholeSum, 'seat')}. The remaining ${n0(rd.remainderSeats)} ${rd.remainderSeats === 1 ? 'seat goes' : 'seats go one each'} to the ${rd.remainderSeats === 1 ? 'college' : 'colleges'} with the largest fractional parts: ${list(extras)}.`);
+        if (rd.ties.length) s.push(tieSentence(rd));
+      }
+      return s;
+    },
+    table(rd) {
+      const tiePill = r => !r.tie ? '' : rd.unresolved ? `<span class="st tieunresolved">${r.tie} tie, unresolved</span>` : `<span class="st tie${r.tie}">${r.tie} tie</span>`;
+      const rows = rd.rows.map(r => `<tr class="${r.tie ? (rd.unresolved ? 'tieunresolved' : 'tie' + r.tie) : ''}">
+        <td class="l">${esc(r.name)}</td>
+        <td>${n0(r.eligible)}</td>
+        <td>${pct(r.share)}</td>
+        <td class="quota"><span class="work">${n0(rd.pool)} × ${n0(r.eligible)} ÷ ${n0(rd.totalEligible)}</span><span class="is">= ${n3(r.quota)}</span></td>
+        <td>${r.whole}</td>
+        <td>${n3(r.fraction)}</td>
+        <td>${r.rank}</td>
+        <td class="${r.remainderSeat ? 'extra' : ''}">${r.remainderSeat ? '+1' : ''}${tiePill(r)}</td>
+        <td><strong>${r.allocated}</strong></td>
+        <td>${r.demandBefore}</td>
+        <td class="funded ${r.funded ? 'nz' : ''}">${r.funded}</td>
+        <td class="returned ${r.surplus ? 'nz' : ''}">${r.surplus}</td>
+        <td class="l">${statusCell(r)}</td>
+      </tr>`).join('');
+      const sum = k => rd.rows.reduce((s, r) => s + r[k], 0);
+      return `<div class="tablewrap"><table>
+        <thead><tr><th class="l">College</th><th>Eligible</th><th>Share of eligible</th><th>Exact quota arithmetic</th><th>Whole seats</th><th>Fraction</th><th>Rank by fraction</th><th>Extra seat</th><th>Allocated</th><th>Applicants awaiting</th><th>Funded now</th><th>Returned to pool</th><th class="l">Status after round</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td class="l">Total</td><td>${n0(rd.totalEligible)}</td><td>100.0%</td><td class="quota"><span class="is">= ${n3(sum('quota'))}</span></td><td>${rd.wholeSum}</td><td></td><td></td><td>${rd.remainderSeats ? '+' + rd.remainderSeats : ''}</td><td>${rd.pool}</td><td>${sum('demandBefore')}</td><td>${rd.funded}</td><td>${rd.surplus}</td><td></td></tr></tfoot>
+      </table></div>`;
+    },
+    record(rd, rec) {
+      rec.push(`<li>Pool: ${n0(rd.pool)}. Taking part: ${list(rd.rows.map(r => esc(r.name)))} (${n0(rd.totalEligible)} eligible).</li>`);
+      rd.rows.forEach(r => {
+        rec.push(`<li>${esc(r.name)}: ${n0(rd.pool)} × ${n0(r.eligible)} ÷ ${n0(rd.totalEligible)} = ${n3(r.quota)} → ${r.whole} whole${r.remainderSeat ? ` + 1 extra (fraction ${n3(r.fraction)}, rank ${r.rank} of ${rd.rows.length})` : ` (fraction ${n3(r.fraction)}, rank ${r.rank}, no extra seat)`} = ${r.allocated} allocated. Applicants awaiting ${r.demandBefore}; funded ${r.funded}; returned ${r.surplus}; ${r.settled ? 'settled' : `${r.demandAfter} still waiting`}.</li>`);
+      });
+      rec.push(`<li>Check: whole seats ${rd.wholeSum} + extra seats ${rd.remainderSeats} = ${rd.wholeSum + rd.remainderSeats} = pool ${rd.pool}. Funded ${rd.funded} + returned ${rd.surplus} = ${rd.funded + rd.surplus} = pool ${rd.pool}.</li>`);
+    },
+    csvHeader: ['Round', 'College', 'Eligible', 'Share of eligible', 'Exact quota arithmetic', 'Exact quota', 'Whole seats', 'Fraction', 'Rank', 'Extra seat', 'Allocated', 'Applicants awaiting', 'Funded this round', 'Returned to pool', 'Settled', 'Tie at cutoff', 'Tie decided by', 'Carry forward used', 'Position in list'],
+    csvRows: rd => rd.rows.map(r => [rd.round, r.name, r.eligible, r.share, `${rd.pool} × ${r.eligible} ÷ ${rd.totalEligible}`, r.quota, r.whole, r.fraction, r.rank, r.remainderSeat, r.allocated, r.demandBefore, r.funded, r.surplus, r.settled ? 'yes' : 'no', r.tie, r.tie ? rd.tieDecidedBy : '', r.carry, r.idx + 1]),
+    csvExtra: () => [],
+  };
+  const METHOD = METHODS[APPORTIONMENT];
+
   function roundNarrative(rd, isFirst) {
-    const s = [];
+    const s = METHOD.narrative(rd, isFirst);
     const p = rd.rows;
-    if (isFirst) {
-      s.push(`All ${p.length} ${plural(p.length, 'college')} take part in round 1, including any with no applicants. The pool of ${n0(rd.pool)} ${plural(rd.pool, 'seat')} is divided in proportion to their ${n0(rd.totalEligible)} eligible faculty: each college's exact quota is ${n0(rd.pool)} × (eligible ÷ ${n0(rd.totalEligible)}).`);
-    } else {
-      s.push(`The ${n0(rd.pool)} ${plural(rd.pool, 'seat')} returned from round ${rd.round - 1} ${rd.pool === 1 ? 'is' : 'are'} divided among the ${p.length} ${plural(p.length, 'college')} that still ${p.length === 1 ? 'has' : 'have'} unfunded applicants (${list(p.map(r => esc(r.name)))}), in proportion to their ${n0(rd.totalEligible)} eligible faculty. Settled colleges do not take part.`);
-    }
-    if (rd.remainderSeats === 0) {
-      s.push(`The whole-number parts of the quotas add up to exactly ${n0(rd.wholeSum)}, so no extra seats need to be assigned.`);
-    } else {
-      const extras = rd.order.slice(0, rd.remainderSeats).map(r => `${esc(r.name)} (${n3(r.fraction)})`);
-      s.push(`The whole-number parts of the quotas account for ${n0(rd.wholeSum)} ${plural(rd.wholeSum, 'seat')}. The remaining ${n0(rd.remainderSeats)} ${rd.remainderSeats === 1 ? 'seat goes' : 'seats go one each'} to the ${rd.remainderSeats === 1 ? 'college' : 'colleges'} with the largest fractional parts: ${list(extras)}.`);
-      if (rd.ties.length) s.push(tieSentence(rd));
-    }
     if (rd.surplus === 0) {
       s.push(`Every allocated seat has an applicant to fund, so nothing is returned to the pool.`);
     } else {
@@ -819,31 +970,6 @@ function formatInputsCsv(colleges) {
     }
     if (rd.settledNow.length) s.push(`Settled after this round (every applicant funded, or no applicants): ${list(rd.settledNow.map(esc))}.`);
     return s.map(x => `<p>${x}</p>`).join('');
-  }
-
-  function roundTable(rd) {
-    const tiePill = r => !r.tie ? '' : rd.unresolved ? `<span class="st tieunresolved">${r.tie} tie, unresolved</span>` : `<span class="st tie${r.tie}">${r.tie} tie</span>`;
-    const rows = rd.rows.map(r => `<tr class="${r.tie ? (rd.unresolved ? 'tieunresolved' : 'tie' + r.tie) : ''}">
-      <td class="l">${esc(r.name)}</td>
-      <td>${n0(r.eligible)}</td>
-      <td>${pct(r.share)}</td>
-      <td class="quota"><span class="work">${n0(rd.pool)} × ${n0(r.eligible)} ÷ ${n0(rd.totalEligible)}</span><span class="is">= ${n3(r.quota)}</span></td>
-      <td>${r.whole}</td>
-      <td>${n3(r.fraction)}</td>
-      <td>${r.rank}</td>
-      <td class="${r.remainderSeat ? 'extra' : ''}">${r.remainderSeat ? '+1' : ''}${tiePill(r)}</td>
-      <td><strong>${r.allocated}</strong></td>
-      <td>${r.demandBefore}</td>
-      <td class="funded ${r.funded ? 'nz' : ''}">${r.funded}</td>
-      <td class="returned ${r.surplus ? 'nz' : ''}">${r.surplus}</td>
-      <td class="l">${statusCell(r)}</td>
-    </tr>`).join('');
-    const sum = k => rd.rows.reduce((s, r) => s + r[k], 0);
-    return `<div class="tablewrap"><table>
-      <thead><tr><th class="l">College</th><th>Eligible</th><th>Share of eligible</th><th>Exact quota arithmetic</th><th>Whole seats</th><th>Fraction</th><th>Rank by fraction</th><th>Extra seat</th><th>Allocated</th><th>Applicants awaiting</th><th>Funded now</th><th>Returned to pool</th><th class="l">Status after round</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr><td class="l">Total</td><td>${n0(rd.totalEligible)}</td><td>100.0%</td><td class="quota"><span class="is">= ${n3(sum('quota'))}</span></td><td>${rd.wholeSum}</td><td></td><td></td><td>${rd.remainderSeats ? '+' + rd.remainderSeats : ''}</td><td>${rd.pool}</td><td>${sum('demandBefore')}</td><td>${rd.funded}</td><td>${rd.surplus}</td><td></td></tr></tfoot>
-    </table></div>`;
   }
 
   function renderResults(pool, res, cs, ta) {
@@ -860,7 +986,7 @@ function formatInputsCsv(colleges) {
     h.push(`<p>${res.stopReason} ${res.rounds.length} ${plural(res.rounds.length, 'round was', 'rounds were')} needed.</p>`);
     if (res.unresolvedRounds.length) {
       const n = res.unresolvedRounds.length;
-      h.push(`<div class="note alert"><strong>Unresolved ${plural(n, 'tie')} in round ${list(res.unresolvedRounds.map(String))}.</strong> The rule in use (carry forward, then ${TIE_METHOD_LABEL[res.method]}) cannot decide ${n === 1 ? 'this tie' : 'these ties'}: the colleges concerned have the same fractional part, the same carry forward, and every further step of the rule leaves them equal. The ${plural(n, 'seat is', 'seats are')} shown provisionally going to the college listed higher, and the rows are marked in every table. To decide, choose a rule that uses list order under the inputs and put the colleges in the order the committee decides, or record that the provisional result was accepted. The round narrative names the colleges.</div>`);
+      h.push(`<div class="note alert"><strong>Unresolved ${plural(n, 'tie')} in round ${list(res.unresolvedRounds.map(String))}.</strong> The rule in use (carry forward, then ${TIE_METHOD_LABEL[res.method]}) cannot decide ${n === 1 ? 'this tie' : 'these ties'}: the colleges concerned have ${METHOD.sameThing}, the same carry forward, and every further step of the rule leaves them equal. The ${plural(n, 'seat is', 'seats are')} shown provisionally going to the college listed higher, and the rows are marked in every table. To decide, choose a rule that uses list order under the inputs and put the colleges in the order the committee decides, or record that the provisional result was accepted. The round narrative names the colleges.</div>`);
     }
     if (res.unallocated) h.push(`<div class="note warn">${n0(res.unallocated)} ${plural(res.unallocated, 'seat', 'seats')} left over: there are more seats than applicants campus-wide, so every applicant is funded and the remainder cannot be placed.</div>`);
     if (ta > res.totalAwarded) h.push(`<div class="note">${n0(ta - res.totalAwarded)} ${plural(ta - res.totalAwarded, 'applicant is', 'applicants are')} unfunded because the pool is smaller than the number of applicants. The colleges concerned are marked in the final allocation below.</div>`);
@@ -882,7 +1008,7 @@ function formatInputsCsv(colleges) {
 
     /* carry forward */
     h.push(`<h2>Carry forward for next year</h2>`);
-    h.push(`<p>A carry forward is the fractional part of a seat that a college lost in a tie. It is used only to break ties: when colleges have the same fractional part at the cutoff for an extra seat, the seat goes to the one with the larger carry forward. A college that loses a tie and ends the year with an unfunded applicant adds the fraction it lost to its carry forward. A college that wins a tie starts next year at zero. Every other carry forward is unchanged.</p>`);
+    h.push(METHOD.carryIntro);
     const tieRounds = res.rounds.filter(rd => rd.ties.length).map(rd => rd.round);
     h.push(tieRounds.length
       ? `<div class="note">${tieRounds.length === 1 ? 'A tie decided a seat in round ' + tieRounds[0] : 'Ties decided seats in rounds ' + list(tieRounds.map(String))}; see the round narrative below.${res.unresolvedRounds.length ? ' <strong>A tie marked unresolved is provisional</strong>, and so are the carry forwards that depend on it.' : ''} Enter the values in the last column as the carry forward next year.</div>`
@@ -891,7 +1017,7 @@ function formatInputsCsv(colleges) {
       <thead><tr><th class="l">College</th><th>Carry forward entered this year</th><th class="l">Ties this year</th><th>Carry forward for next year</th><th class="l">Why</th></tr></thead>
       <tbody>${res.final.map(f => `<tr class="${evRowClass(f.tieEvents)}">
         <td class="l">${esc(f.name)}</td><td>${n3(f.carry)}</td>
-        <td class="l">${f.tieEvents.map(ev => `${evPill(ev)} fraction ${n3(ev.fraction)}`).join('; ') || '—'}</td>
+        <td class="l">${f.tieEvents.map(ev => `${evPill(ev)} ${METHOD.stake(ev)}`).join('; ') || '—'}</td>
         <td class="${f.carryNext !== f.carry ? 'carrychg' : ''}"><strong>${n3(f.carryNext)}</strong></td>
         <td class="l why">${carryReason(f)}</td>
       </tr>`).join('')}</tbody>
@@ -900,11 +1026,11 @@ function formatInputsCsv(colleges) {
 
     /* rounds */
     h.push(`<h2>Round by round</h2>`);
-    h.push(`<p>Each round divides a pool of seats among the colleges taking part. Columns read left to right in the order the calculation is done: quota, whole seats, extra seats by largest fraction, allocation, then matching to applicants. <a href="#method" class="methodlink">Read the full description of the process.</a></p>`);
+    h.push(METHOD.roundsIntro);
     res.rounds.forEach((rd, i) => {
       h.push(`<h3>Round ${rd.round}: ${n0(rd.pool)} ${plural(rd.pool, 'seat')} among ${rd.participants} ${plural(rd.participants, 'college')} with ${n0(rd.totalEligible)} eligible faculty</h3>`);
       h.push(roundNarrative(rd, i === 0));
-      h.push(roundTable(rd));
+      h.push(METHOD.table(rd));
     });
 
     /* record */
@@ -918,11 +1044,7 @@ function formatInputsCsv(colleges) {
     rec.push(`<li>Tie rule: a tie at the cutoff goes to the larger carry forward, then to ${TIE_METHOD_LABEL[res.method]}. List order: ${cs.map((c, i) => `${i + 1} ${esc(c.name)}`).join('; ')}.</li>`);
     res.rounds.forEach(rd => {
       rec.push(`<li class="head">Round ${rd.round}</li>`);
-      rec.push(`<li>Pool: ${n0(rd.pool)}. Taking part: ${list(rd.rows.map(r => esc(r.name)))} (${n0(rd.totalEligible)} eligible).</li>`);
-      rd.rows.forEach(r => {
-        rec.push(`<li>${esc(r.name)}: ${n0(rd.pool)} × ${n0(r.eligible)} ÷ ${n0(rd.totalEligible)} = ${n3(r.quota)} → ${r.whole} whole${r.remainderSeat ? ` + 1 extra (fraction ${n3(r.fraction)}, rank ${r.rank} of ${rd.rows.length})` : ` (fraction ${n3(r.fraction)}, rank ${r.rank}, no extra seat)`} = ${r.allocated} allocated. Applicants awaiting ${r.demandBefore}; funded ${r.funded}; returned ${r.surplus}; ${r.settled ? 'settled' : `${r.demandAfter} still waiting`}.</li>`);
-      });
-      rec.push(`<li>Check: whole seats ${rd.wholeSum} + extra seats ${rd.remainderSeats} = ${rd.wholeSum + rd.remainderSeats} = pool ${rd.pool}. Funded ${rd.funded} + returned ${rd.surplus} = ${rd.funded + rd.surplus} = pool ${rd.pool}.</li>`);
+      METHOD.record(rd, rec);
       if (rd.ties.length) rec.push(`<li>${tieSentence(rd)}${rd.tieDecidedBy === 'carry' ? ` Carry forwards: ${rd.rows.filter(r => r.tie).map(r => `${esc(r.name)} ${n3(r.carry)}`).join(', ')}.` : ''}</li>`);
     });
     rec.push(`<li class="head">Carry forward for next year</li>`);

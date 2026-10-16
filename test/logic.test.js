@@ -2,7 +2,7 @@
 /* Tests for src/logic.js (node:test, no dependencies). Run with `npm test`. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { computeSeatPool, hamilton, allocate, validate, TIE_METHODS, parseInputsCsv, formatInputsCsv } = require('../src/logic.js');
+const { computeSeatPool, hamilton, webster, allocate, validate, TIE_METHODS, APPORTIONMENTS, parseInputsCsv, formatInputsCsv } = require('../src/logic.js');
 
 /* ---------- helpers ---------- */
 const col = (name, eligible, applicants, carry = 0) => ({ name, eligible, applicants, carry });
@@ -548,4 +548,254 @@ test('csv: formatInputsCsv writes a header and quotes what needs quoting; round 
   assert.deepEqual(back.slice(0, 2), cs.slice(0, 2));
   assert.equal(back[2].applicants, 0);                                    // and a blank applicants cell reads as 0
   assert.deepEqual(parseInputsCsv(formatInputsCsv(CSUN)), CSUN);
+});
+
+/* ---------- webster (R4.9): the same rounds, caps and tie rules with Webster's method inside each round ---------- */
+const part = (idx, name, eligible, carry = 0) => ({ idx, name, eligible, carry });
+// claim of college r for its next seat, compared exactly: e1/(a1+½) vs e2/(a2+½)
+const claimCmp = (e1, a1, e2, a2) => e1 * (2 * a2 + 1) - e2 * (2 * a1 + 1);
+
+test('webster: seats go one at a time to the strongest claim; the divisor check reproduces the result', () => {
+  const w = webster([part(0, 'A', 50), part(1, 'B', 30), part(2, 'C', 20)], 11);   // exact shares 5.5, 3.3, 2.2
+  assert.equal(w.apportionment, 'webster');
+  assert.equal(w.total, 100);
+  assert.deepEqual(w.rows.map(r => r.allocated), [6, 3, 2]);
+  assert.equal(w.awards.length, 11);
+  assert.deepEqual(w.awards.slice(0, 4).map(a => [a.name, a.claim, a.runnerUp.name, a.runnerUp.claim]),
+    [['A', 100, 'B', 60], ['B', 60, 'C', 40], ['C', 40, 'A', 50 / 1.5], ['A', 50 / 1.5, 'B', 20]]);
+  assert.equal(w.lastAward.name, 'A');                     // A's 6th seat: 50 ÷ 5.5 = 9.091
+  assert.equal(w.lastAward.seatsAfter, 6);
+  assert.equal(w.runnerUp.name, 'B');                      // B's 4th seat would be 30 ÷ 3.5 = 8.571
+  assert.equal(w.runnerUp.seats, 3);
+  assert.equal(w.divisorText, '9');                        // the shortest decimal in (8.571, 9.091]
+  assert.equal(w.divisor, 9);
+  assert.equal(w.divisorIsCutoff, false);
+  w.rows.forEach(r => assert.equal(Math.round(r.eligible / w.divisor), r.allocated, r.name));
+  assert.deepEqual(w.rows.map(r => r.lastClaim), [50 / 5.5, 30 / 2.5, 20 / 1.5]);
+  assert.deepEqual(w.rows.map(r => r.nextClaim), [50 / 6.5, 30 / 3.5, 20 / 2.5]);
+  assert.deepEqual(w.rows.map(r => r.quota), [5.5, 3.3, 2.2]);
+  assert.ok(w.rows.every(r => r.tieFraction === 0.5));
+  assert.deepEqual(w.ties, []);
+  assert.equal(w.tieDecidedBy, '');
+  assert.equal(w.unresolved, false);
+  // Zero seats: no awards, no cutoff, and a divisor above every claim.
+  const z = webster([part(0, 'A', 7), part(1, 'B', 3)], 0);
+  assert.deepEqual(z.awards, []);
+  assert.equal(z.lastAward, null);
+  assert.deepEqual(z.rows.map(r => r.allocated), [0, 0]);
+  assert.ok(z.divisor > 14);
+});
+
+test('webster: the CSUN test data gives the same seats as Hamilton, with a divisor of 8.5 in round 1', () => {
+  const res = allocate(CSUN, 46, 'eligible', 'webster');
+  assert.equal(res.apportionment, 'webster');
+  assert.equal(res.rounds.length, 2);
+  const r1 = res.rounds[0];
+  assert.equal(r1.apportionment, 'webster');
+  assert.deepEqual(r1.rows.map(r => r.allocated), [4, 8, 5, 1, 9, 5, 4, 2, 5, 3]);
+  assert.equal(r1.divisorText, '8.5');
+  assert.equal(r1.lastAward.name, 'Health & Human Development');           // 64 ÷ 7.5 = 8.533
+  assert.equal(r1.runnerUp.name, 'David Nazarian College of Business & Economics');   // 38 ÷ 4.5 = 8.444
+  assert.equal(r1.awards.length, 46);
+  assert.equal(r1.awards[0].name, 'Social & Behavioral Sciences');
+  assert.equal(r1.awards[0].claim, 150);
+  assert.deepEqual(r1.ties, []);                             // Humanities and Mike Curb tie at 39 eligible, but both win
+  assert.equal(r1.surplus, 1);
+  const r2 = res.rounds[1];
+  assert.equal(r2.pool, 1);
+  assert.equal(r2.participants, 8);
+  assert.equal(r2.awards[0].name, 'Social & Behavioral Sciences');          // one seat goes to the largest claim: 75 ÷ 0.5
+  assert.equal(r2.divisorText, '129');
+  assert.deepEqual(res.final.map(f => f.awarded), [4, 8, 5, 0, 10, 5, 4, 2, 5, 3]);
+  assert.deepEqual(res.final.map(f => f.awarded), allocate(CSUN, 46).final.map(f => f.awarded));
+  assert.equal(res.totalAwarded, 46);
+  assert.equal(res.unallocated, 0);
+});
+
+test('webster tie-break: carry forward, then the steps of the rule; unresolved is placed provisionally by list order', () => {
+  // Claims: C's 4th seat is 70 ÷ 3.5 = 20 and A's 1st is 10 ÷ 0.5 = 20; the 5th seat is the tie.
+  const abc = (ca = 0, cc = 0) => [part(0, 'A', 10, ca), part(1, 'B', 20), part(2, 'C', 70, cc)];
+  let w = webster(abc(), 5);
+  assert.deepEqual(w.ties.sort(), ['A', 'C']);
+  assert.equal(w.tieDecidedBy, 'eligible');
+  assert.deepEqual(w.rows.map(r => r.allocated), [0, 1, 4]);
+  assert.deepEqual(w.rows.map(r => r.tie), ['lost', '', 'won']);
+  assert.equal(w.divisorIsCutoff, true);
+  assert.equal(w.divisor, 20);
+  assert.deepEqual(w.rows.map(r => r.quotient), [0.5, 1, 3.5]);   // the tied colleges sit exactly halfway
+  w = webster(abc(), 5, 'list');
+  assert.equal(w.tieDecidedBy, 'list');
+  assert.deepEqual(w.rows.map(r => r.allocated), [1, 1, 3]);
+  assert.deepEqual(w.rows.map(r => r.tie), ['won', '', 'lost']);
+  w = webster(abc(), 5, 'list-only');
+  assert.equal(w.tieDecidedBy, 'list');
+  assert.deepEqual(w.rows.map(r => r.allocated), [1, 1, 3]);
+  w = webster(abc(0.3, 0), 5);
+  assert.equal(w.tieDecidedBy, 'carry');
+  assert.deepEqual(w.rows.map(r => r.allocated), [1, 1, 3]);
+  w = webster(abc(0.0004, 0), 5);                          // below a thousandth: equal, so headcount decides
+  assert.equal(w.tieDecidedBy, 'eligible');
+  w = webster(abc(0, 0.7), 5, 'list');
+  assert.equal(w.tieDecidedBy, 'carry');
+  assert.equal(w.rows[2].tie, 'won');
+  // Equal headcount under the default rule is unresolved; the seat is placed with the college listed higher (idx, not array order).
+  w = webster([part(0, 'Zeta', 50), part(1, 'Alpha', 50)], 3);
+  assert.equal(w.tieDecidedBy, 'unresolved');
+  assert.equal(w.unresolved, true);
+  assert.deepEqual(w.rows.map(r => r.allocated), [2, 1]);
+  assert.deepEqual(w.rows.map(r => r.tie), ['won', 'lost']);
+  w = webster([part(5, 'Zeta', 50), part(2, 'Alpha', 50)], 3);
+  assert.deepEqual(w.rows.map(r => r.tie), ['lost', 'won']);
+  w = webster([part(0, 'Zeta', 50), part(1, 'Alpha', 50)], 3, 'list');
+  assert.equal(w.tieDecidedBy, 'list');
+  // Three equal colleges, one seat: one winner, two losers, unresolved; two seats: two winners, one loser.
+  w = webster([part(0, 'A', 1), part(1, 'B', 1), part(2, 'C', 1)], 1);
+  assert.equal(w.tieDecidedBy, 'unresolved');
+  assert.deepEqual(w.rows.map(r => r.tie), ['won', 'lost', 'lost']);
+  w = webster([part(0, 'A', 1), part(1, 'B', 1), part(2, 'C', 1)], 2);
+  assert.deepEqual(w.rows.map(r => r.tie), ['won', 'won', 'lost']);
+  // A tie between claims for different seat numbers: B's 2nd seat (90 ÷ 1.5 = 60) against A's 1st (30 ÷ 0.5 = 60).
+  w = webster([part(0, 'A', 30), part(1, 'B', 90)], 2);
+  assert.deepEqual(w.ties.sort(), ['A', 'B']);
+  assert.equal(w.tieDecidedBy, 'eligible');
+  assert.deepEqual(w.rows.map(r => r.allocated), [0, 2]);
+  // An unknown rule falls back to the default.
+  assert.equal(webster([part(0, 'A', 10), part(1, 'C', 70)], 1, 'bogus').method, 'eligible');
+});
+
+test('allocate with webster: a tie loser adds half a seat; a winner resets; apportionment is reported', () => {
+  const cs = [col('A', 10, 10), col('B', 20, 20), col('C', 70, 70)];
+  const res = allocate(cs, 5, 'eligible', 'webster');
+  assert.equal(res.apportionment, 'webster');
+  assert.equal(res.rounds[0].tieDecidedBy, 'eligible');
+  assert.deepEqual(res.final[0].tieEvents, [{ round: 1, result: 'lost', fraction: 0.5, decidedBy: 'eligible', counted: true, carryAfter: 0.5 }]);
+  assert.equal(res.final[0].carryNext, 0.5);
+  assert.equal(res.final[2].tieEvents[0].result, 'won');
+  assert.equal(res.final[2].carryNext, 0);
+  // A loser whose applicants were all funded adds nothing; repeated losses accumulate in halves.
+  const none = allocate([col('A', 10, 0, 0.2), col('B', 20, 20), col('C', 70, 3, 0.4)], 5, 'eligible', 'webster');
+  assert.equal(none.rounds[0].tieDecidedBy, 'carry');
+  assert.equal(none.final[0].carryNext, 0.2);
+  // Round 1, 6 seats: Big takes five (claims 200 down to 22.2), then Alpha's 20 beats Zed's 20 by list order.
+  // Big has no applicants, so five seats return. Round 2: 20, 20, 6.67, 6.67, then 4 against 4: Alpha again.
+  const twice = allocate([col('Alpha', 10, 10), col('Zed', 10, 10), col('Big', 100, 0)], 6, 'list', 'webster');
+  assert.deepEqual(twice.rounds.map(rd => rd.tieDecidedBy), ['list', 'list']);
+  assert.deepEqual(twice.final[1].tieEvents.map(e => [e.round, e.result, e.fraction]), [[1, 'lost', 0.5], [2, 'lost', 0.5]]);
+  assert.equal(twice.final[1].carryNext, 1);
+  assert.deepEqual(twice.final.map(f => f.awarded), [4, 2, 0]);
+  // An unknown apportionment falls back to Hamilton.
+  assert.equal(allocate(cs, 5, 'eligible', 'bogus').apportionment, 'hamilton');
+  assert.equal(allocate(cs, 5).apportionment, 'hamilton');
+  assert.deepEqual(APPORTIONMENTS, ['hamilton', 'webster']);
+});
+
+test('webster: adding a seat never takes one away (no Alabama paradox), awards are in claim order, the cutoff is exact', () => {
+  let seed = 9001;
+  const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+  for (let iter = 0; iter < 400; iter++) {
+    const n = 1 + rnd(8);
+    const parts = [];
+    for (let i = 0; i < n; i++) parts.push(part(i, `C${i}`, rnd(5) === 0 ? rnd(3) : rnd(60), rnd(3) === 0 ? rnd(1000) / 1000 : 0));
+    if (parts.every(p => p.eligible === 0)) parts[0].eligible = 1;
+    const method = TIE_METHODS[rnd(TIE_METHODS.length)];
+    let prev = webster(parts, 0, method);
+    for (let seats = 1; seats <= 25; seats++) {
+      const w = webster(parts, seats, method);
+      const tag = JSON.stringify({ parts, seats, method });
+      w.rows.forEach((r, i) => assert.ok(r.allocated >= prev.rows[i].allocated, 'seat lost when the pool grew: ' + tag));
+      assert.equal(w.rows.reduce((s, r) => s + r.allocated, 0), seats, tag);
+      assert.equal(w.awards.length, seats, tag);
+      w.awards.forEach((a, k) => {
+        if (k) assert.ok(claimCmp(w.awards[k - 1].eligible, w.awards[k - 1].seatsBefore, a.eligible, a.seatsBefore) >= 0, 'awards out of claim order: ' + tag);
+        if (a.runnerUp) assert.ok(claimCmp(a.eligible, a.seatsBefore, a.runnerUp.eligible, a.runnerUp.seats) >= 0, 'runner-up beat the award: ' + tag);
+      });
+      // Every claim that won a seat is at least as strong as every claim that did not.
+      const last = w.lastAward, ru = w.runnerUp;
+      w.rows.forEach(r => {
+        if (r.allocated) assert.ok(claimCmp(r.eligible, r.allocated - 1, ru.eligible, ru.seats) >= 0, tag);
+        assert.ok(claimCmp(last.eligible, last.seatsBefore, r.eligible, r.allocated) >= 0, tag);
+      });
+      const tie = claimCmp(last.eligible, last.seatsBefore, ru.eligible, ru.seats) === 0;
+      assert.equal(w.ties.length > 0, tie, tag);
+      assert.equal(w.divisorIsCutoff, tie, tag);
+      if (!tie) {
+        assert.ok(w.divisor > ru.claim && w.divisor <= last.claim, tag);
+        w.rows.forEach(r => assert.equal(Math.round(r.eligible / w.divisor), r.allocated, 'divisor check failed: ' + tag));
+      } else {
+        const wr = w.rows.find(r => r.idx === last.idx), lr = w.rows.find(r => r.idx === ru.idx);
+        assert.equal(wr.tie, 'won', tag); assert.equal(lr.tie, 'lost', tag);
+        const sameCarry = Math.round(wr.carry * 1000) === Math.round(lr.carry * 1000);
+        if (w.tieDecidedBy === 'carry') assert.ok(!sameCarry && wr.carry > lr.carry, tag);
+        if (w.tieDecidedBy === 'eligible') assert.ok(sameCarry && wr.eligible > lr.eligible && method !== 'list-only', tag);
+        if (w.tieDecidedBy === 'list') assert.ok(sameCarry && wr.idx < lr.idx, tag);
+        if (w.tieDecidedBy === 'unresolved') assert.ok(sameCarry && wr.eligible === lr.eligible && wr.idx < lr.idx && method === 'eligible', tag);
+        assert.equal(w.unresolved, w.tieDecidedBy === 'unresolved', tag);
+      }
+      prev = w;
+    }
+  }
+});
+
+test('fuzz: allocation invariants hold for random inputs under webster', () => {
+  let seed = 777777;
+  const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+  for (let iter = 0; iter < 2000; iter++) {
+    const n = 1 + rnd(12);
+    const cs = [];
+    for (let i = 0; i < n; i++) {
+      const eligible = rnd(4) === 0 ? rnd(3) : rnd(200);
+      const applicants = rnd(3) === 0 ? 0 : rnd(eligible + 1);
+      const carry = rnd(3) === 0 ? rnd(1000) / 1000 : 0;
+      cs.push(col(`C${i}`, eligible, applicants, carry));
+    }
+    if (cs.every(c => c.eligible === 0)) cs[0].eligible = 1;
+    const percent = [12, 5, 33.3333, 100, 0][rnd(5)];
+    const p = computeSeatPool(cs, percent, ['up', 'nearest', 'down'][rnd(3)]);
+    const method = TIE_METHODS[rnd(TIE_METHODS.length)];
+    const res = allocate(cs, p.seats, method, 'webster');
+    const tag = JSON.stringify({ cs, seats: p.seats, method });
+    assert.equal(res.apportionment, 'webster', tag);
+    assert.equal(res.method, method, tag);
+    assert.deepEqual(res.unresolvedRounds, res.rounds.filter(rd => rd.unresolved).map(rd => rd.round), tag);
+    if (method !== 'eligible') assert.deepEqual(res.unresolvedRounds, [], tag);
+    assert.equal(res.totalAwarded + res.unallocated, p.seats, tag);
+    assert.ok(res.rounds.length <= n + 1, tag);
+    assert.ok(!/should not happen/.test(res.stopReason), tag);
+    res.final.forEach((f, i) => {
+      assert.ok(f.awarded <= cs[i].applicants, tag);
+      assert.equal(f.awarded + f.unfunded, cs[i].applicants, tag);
+      assert.equal(f.byRound.reduce((s, b) => s + b.seats, 0), f.awarded, tag);
+      assert.ok(f.carryNext >= 0, tag);
+      f.tieEvents.forEach(ev => assert.equal(ev.fraction, 0.5, tag));
+    });
+    if (res.unallocated > 0) assert.ok(res.final.every(f => f.unfunded === 0), tag);
+    const totalApplicants = cs.reduce((s, c) => s + c.applicants, 0);
+    if (res.totalAwarded < Math.min(p.seats, totalApplicants)) assert.fail('seats left while applicants unfunded: ' + tag);
+    let pool = p.seats;
+    const settledNames = new Set();
+    res.rounds.forEach((rd, k) => {
+      assert.equal(rd.pool, pool, tag);
+      assert.equal(rd.apportionment, 'webster', tag);
+      assert.equal(rd.rows.reduce((s, r) => s + r.allocated, 0), rd.pool, tag);
+      assert.equal(rd.awards.length, rd.pool, tag);
+      assert.equal(rd.funded + rd.surplus, rd.pool, tag);
+      assert.equal(rd.rows.reduce((s, r) => s + r.funded, 0), rd.funded, tag);
+      assert.equal(rd.rows.reduce((s, r) => s + r.surplus, 0), rd.surplus, tag);
+      if (k === 0) assert.equal(rd.rows.length, n, tag);
+      else rd.rows.forEach(r => { assert.ok(!settledNames.has(r.name), tag); assert.ok(r.demandBefore > 0, tag); });
+      rd.rows.forEach(r => {
+        assert.ok(r.funded <= r.demandBefore, tag);
+        if (r.settled) settledNames.add(r.name);
+        if (!rd.ties.length) assert.equal(Math.round(r.eligible / rd.divisor), r.allocated, tag);
+      });
+      if (rd.ties.length) {
+        assert.ok(rd.rows.some(r => r.tie === 'won') && rd.rows.some(r => r.tie === 'lost'), tag);
+        assert.ok(rd.tieDecidedBy, tag);
+        assert.equal(rd.unresolved, rd.tieDecidedBy === 'unresolved', tag);
+      } else {
+        assert.equal(rd.tieDecidedBy, '', tag);
+      }
+      pool = rd.surplus;
+    });
+  }
 });

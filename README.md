@@ -2,11 +2,13 @@
 
 A single HTML file that divides a pool of sabbatical seats across the colleges of a university in proportion to their eligible faculty, using the Hamilton (largest-remainder) method in rounds. It was written for the Faculty Senate at California State University, Northridge (CSUN), but the college list is editable and the file can be used anywhere.
 
+A companion file, `dist/sabbatical_webster.html`, is the same worksheet with Webster's method (Sainte-Laguë) in place of Hamilton's inside each round: every college's eligible faculty is divided by one common divisor and rounded to the nearest whole number. The two agree in most years; `MethodAnalysis.md` compares them and explains why Webster's method cannot show the Alabama paradox. Which one the Senate adopts is a policy decision.
+
 Every number the page produces can be checked by hand from the inputs shown on it. Each round is described in plain sentences and in a full table, and a step-by-step record lists every division and every seat movement with checksums.
 
 ## Using the worksheet
 
-1. Download `dist/sabbatical-allocation.html` and double-click it. It opens in any current browser on Windows or macOS. Nothing is installed and nothing is sent anywhere; the page works with the computer offline.
+1. Download `dist/sabbatical-allocation.html` (or `dist/sabbatical_webster.html` for the Webster version) and double-click it. It opens in any current browser on Windows or macOS. Nothing is installed and nothing is sent anywhere; the page works with the computer offline.
 2. Enter each college's eligible faculty and applicants. The ten CSUN colleges are listed on open. Colleges can be added, removed, or renamed.
 3. Enter each college's carry forward from the previous year's report, if any. Or load all of it at once from a spreadsheet saved as CSV with columns for college, eligible faculty, applicants, and carry forward; the page's "Files" section shows the shape.
 4. Results update as you type. Use the buttons at the top to save the inputs to a CSV file, load them again later, download the results as CSV, or print.
@@ -16,10 +18,11 @@ The seat pool is a percentage of all eligible faculty (12% by default, rounded u
 ## Repository layout
 
 ```
-dist/sabbatical-allocation.html   the deliverable (built; do not edit by hand)
-src/logic.js                      pure allocation logic, testable under Node
-src/sabbatical-allocation.html    page: CSS, markup, and UI script (source of the deliverable)
-build.js                          splices src/logic.js into src/sabbatical-allocation.html -> dist/
+dist/sabbatical-allocation.html   the deliverable, Hamilton method (built; do not edit by hand)
+dist/sabbatical_webster.html      the same worksheet with Webster's method (built; do not edit by hand)
+src/logic.js                      pure allocation logic, both methods, testable under Node
+src/sabbatical-allocation.html    page: CSS, markup, and UI script (source of both deliverables)
+build.js                          splices src/logic.js into src/sabbatical-allocation.html -> dist/, one file per method
 test/logic.test.js                allocation tests, including randomized invariant checks
 test/build.test.js                checks that dist/ matches src/ and is self-contained
 tools/screenshot.py               optional headless render for visual review
@@ -34,9 +37,9 @@ Node 20 or later. There are no dependencies to install.
 
 ```
 npm test          # run the tests
-npm run build     # rebuild dist/sabbatical-allocation.html from src/
+npm run build     # rebuild both files in dist/ from src/
 npm run check     # build, then test
-python tools/screenshot.py   # optional: render dist/ headless, report JS errors, write full.png
+python tools/screenshot.py   # optional: render both dist/ files headless, report JS errors, write full.png and full-webster.png
 ```
 
 Edit `src/logic.js` or `src/sabbatical-allocation.html`, then run `npm run check` before committing. The screenshot tool needs `pip install playwright` and `playwright install chromium`.
