@@ -47,4 +47,4 @@ Edit `src/logic.js` or `src/sabbatical-allocation.html`, then run `npm run check
 
 ## License
 
-MIT.
+MIT. The license text is in [`LICENSE`](../../LICENSE) at the repository root.
