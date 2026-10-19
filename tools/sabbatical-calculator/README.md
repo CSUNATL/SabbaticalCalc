@@ -15,7 +15,9 @@ Every number the page produces can be checked by hand from the inputs shown on i
 
 The seat pool is a percentage of all eligible faculty (12% by default, rounded up by default), but never fewer than a minimum number of seats (42 by default, from CSUN's Section 600 policy). All three are adjustable on the page. "How is the allocation calculated?" at the top of the page opens a numbered description of the whole procedure and the reasoning behind its rules.
 
-## Repository layout
+## Folder layout
+
+This tool lives in `tools/sabbatical-calculator/` of the faculty-affairs-tools repository. Paths are relative to that folder.
 
 ```
 dist/sabbatical-allocation.html   the deliverable, Hamilton method (built; do not edit by hand)
@@ -28,11 +30,11 @@ test/build.test.js                checks that dist/ matches src/ and is self-con
 tools/screenshot.py               optional headless render for visual review
 ```
 
-`REQUIREMENTS.md` states what the tool must do and which policy questions are still open. `ARCHITECTURE.md` describes the structure. `HANDOFF.md` records the design conversation and the reasoning behind the non-obvious rules. `CLAUDE.md` holds the working instructions for Claude Code.
+`REQUIREMENTS.md` states what the tool must do and which policy questions are still open. `ARCHITECTURE.md` describes the structure. `HANDOFF.md` records the design conversation and the reasoning behind the non-obvious rules. `AGENTS.md` holds the working instructions for coding agents, and `CLAUDE.md` imports it for Claude Code. Rules for the whole repository are in the root `README.md` and `AGENTS.md`.
 
 ## Development
 
-Node 20 or later. There are no dependencies to install.
+Node 20 or later. There are no dependencies to install. Run the commands from this folder (`tools/sabbatical-calculator/`).
 
 ```
 npm test          # run the tests

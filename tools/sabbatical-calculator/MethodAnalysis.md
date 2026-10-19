@@ -153,7 +153,7 @@ Recommendation: Webster with caps in a single pass. If the Senate wants the smal
 
 Not done; listed for planning.
 
-1. `src/logic.js`: a `webster()` in highest-averages form using the integer comparison above, with the tie steps and the unresolved flag from `hamilton()`; `allocate()` either calls it per round or runs the single capped pass. Integer arithmetic throughout, as CLAUDE.md requires.
+1. `src/logic.js`: a `webster()` in highest-averages form using the integer comparison above, with the tie steps and the unresolved flag from `hamilton()`; `allocate()` either calls it per round or runs the single capped pass. Integer arithmetic throughout, as AGENTS.md requires.
 2. Tests: the same invariants (awarded + unallocated = pool, awarded ≤ applicants, unallocated only when every applicant is funded), plus house monotonicity and population monotonicity as fuzz checks, plus the test-data outcome under the new method (single pass: CSBS 9, DNCBE 5, everything else unchanged).
 3. Page: the method section rewritten for the new rule; the round tables replaced or supplemented by the seat-by-seat table; the entitlement table kept.
 4. REQUIREMENTS.md sections 3, 4, and 4.8; ARCHITECTURE.md; HANDOFF.md.

@@ -4,10 +4,13 @@
 
 The users are committee members on Windows and macOS who must receive one artifact they can launch without installing anything. A self-contained HTML file is the only option that is one file, runs identically on both platforms, needs no runtime, and avoids macOS Gatekeeper and Windows SmartScreen. Rejected alternatives and why: Go/Tauri/Electron/PyInstaller (one binary per OS, unsigned-binary friction on macOS), Java jar (needs a JRE), Excel (multi-round exclusion logic is awkward in formulas, VBA blocked by default), hosted web app (a URL, not a launchable file, and tied to someone's server).
 
-## Repository layout
+## Folder layout
+
+The tool lives in `tools/sabbatical-calculator/` of the faculty-affairs-tools repository. Paths are relative to that folder.
 
 ```
-CLAUDE.md            instructions for Claude Code
+AGENTS.md            instructions for coding agents
+CLAUDE.md            imports AGENTS.md for Claude Code
 REQUIREMENTS.md      what the tool must do; policy rules; open items
 ARCHITECTURE.md      this file
 HANDOFF.md           record of the design conversation and reasoning
@@ -18,12 +21,13 @@ src/logic.js         pure allocation logic, Hamilton and Webster (Node-testable)
 src/sabbatical-allocation.html   page: CSS, markup, UI script, with /*__LOGIC__*/ marker and marked method-specific blocks
 test/logic.test.js   node:test suite for src/logic.js
 test/build.test.js   checks dist/ matches src/ and is self-contained
-.gitattributes       LF line endings for text files, so builds are byte-identical on Windows and macOS
 tools/screenshot.py  optional Playwright render for visual review
 dist/sabbatical-allocation.html   the deliverable, Hamilton method (build output)
 dist/sabbatical_webster.html      the deliverable, Webster method (build output)
 MethodAnalysis.md    comparison of the apportionment methods at CSUN's scale, and the case for Webster
 ```
+
+`.gitattributes` sits at the repository root, not in this folder. It sets LF line endings for text files, so builds are byte-identical on Windows and macOS. Its patterns are unanchored, so they apply here.
 
 `src/` is edited; `dist/` is generated. The only build step is string substitution: `build.js` reads `logic.js`, strips its `module.exports` guard, replaces `/*__LOGIC__*/` in `src/sabbatical-allocation.html`, normalises line endings to LF, and refuses to write if `module.exports` or an external URL would end up in the output. No bundler, no minification. The deliverable is readable source, which is itself a verification feature.
 
