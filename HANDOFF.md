@@ -228,14 +228,35 @@ The Node and Playwright installs from September 15 were gone from this machine a
 
 ## Fifth session: Claude Code, October 16, 2026
 
-Session 4's work was checked and committed. `npm run check` passed 48 tests with both `dist/` files fresh. Jeff chose the two-commit split: `MethodAnalysis.md` alone, then the Webster file with its logic, page, build, tests, tooling and documentation. Both were pushed to `origin/main`. `tools/screenshot.py` was not re-run because no UI had changed since session 4's pass. Playwright was missing again from both Python installs on this machine (Scoop's 3.11 on PATH, and 3.14 via `py`). Reinstall it with `py -3.14 -m pip install --user playwright` and `py -3.14 -m playwright install chromium`, then run the tool with `py -3.14 tools/screenshot.py`.
+### Committing session 4's work
+
+Session 4's work was checked and committed. `npm run check` passed 48 tests with both `dist/` files fresh. Jeff chose the two-commit split: `MethodAnalysis.md` alone, then the Webster file with its logic, page, build, tests, tooling and documentation. Both were pushed to `origin/main` (971d8c5, 433074a). `tools/screenshot.py` was not re-run because no UI had changed since session 4's pass. Playwright was missing again from both Python installs on this machine (Scoop's 3.11 on PATH, and 3.14 via `py`). Reinstall it with `py -3.14 -m pip install --user playwright` and `py -3.14 -m playwright install chromium`, then run the tool with `py -3.14 tools/screenshot.py`.
 
 ### Minimum of 42 seats (same session)
 
-Jeff added a policy caveat he had left out: the union contract sets the pool at 12% of eligible faculty, and CSUN's Section 600 administrative policy adds that there be no fewer than 42 sabbaticals. The pool is now the greater of the rounded 12% and 42. `computeSeatPool` takes a fourth argument, `minimum` (default 0, so existing calls are unchanged), and returns `rounded` (the percentage's result) alongside `seats` (the pool). The minimum is applied after rounding and changes nothing about how the pool is divided.
+Jeff added a policy caveat that had been left out: the union contract sets the pool at 12% of eligible faculty, and CSUN's Section 600 administrative policy adds that there be no fewer than 42 sabbaticals. The pool is now the greater of the rounded 12% and 42. `computeSeatPool` takes a fourth argument, `minimum` (default 0, so existing calls are unchanged), and returns `rounded` (the percentage's result) alongside `seats` (the pool). The minimum is applied after rounding and changes nothing about how the pool is divided.
 
 Decision made without instruction: the minimum is an input on the page beside the percentage ("…to a whole number, but no fewer than [42] seats"), default 42, rather than a fixed number, because the percentage and rounding rule are editable and the page is meant to work elsewhere; 0 means no minimum. Like the percentage, it is not in the inputs CSV and loading a file leaves it as set. The pool statement under the inputs and the step-by-step record each add a sentence saying which applied ("That is fewer than the minimum of 42 seats, so the pool is 42 seats"), and the results CSV gains `Rounded` and `Minimum` fields before `Seats`. The method description cites Section 600. The test data (46 seats) is above the minimum, so its results are unchanged. Applies to both deliverables identically; no method block was touched.
 
-Tests: 50. `tools/screenshot.py` sets the minimum to 0 for its three-seat tie check, and checks both sentences and the validation message. Playwright was reinstalled for Python 3.14 this session, as above.
+Tests: 50. `tools/screenshot.py` sets the minimum to 0 for its three-seat tie check, and checks both sentences and the validation message. Playwright was reinstalled for Python 3.14 this session, as above. Committed and pushed as 58a4af6.
 
-The open items and suggested next steps from session 4, 2 to 4, still stand.
+Open question recorded as R7.7: the policy says "no less than 42 sabbaticals", and the page reads that as a floor on the seat pool, applied after the 12% is rounded. If the policy means 42 awarded, the page cannot meet it in a year with fewer than 42 applicants; it awards every applicant and reports the remaining seats as unallocated, as it always has.
+
+### Environment
+
+Node 24.15 and npm 12.2 are on PATH; `npm run check` and `npm.cmd run check` both work from PowerShell. `python` on PATH is Scoop's 3.11, which has no Playwright; the screenshot tool runs under 3.14: `py -3.14 tools/screenshot.py`. Do not pass `-I` to it, since Playwright is installed in the per-user site-packages that `-I` hides. Playwright has vanished between sessions twice; check with `py -3.14 -c "import playwright"` and reinstall as above if needed.
+
+### State at end of session 5
+
+- Everything is committed and pushed to `main`; the working tree is clean. Commits this session: 971d8c5 (MethodAnalysis.md), 433074a (Webster file), 58a4af6 (minimum of 42 seats), and the close-out commit that adds this section.
+- `npm run check`: 50 tests passing; both `dist/` files are fresh builds of the current `src/`. `py -3.14 tools/screenshot.py` passes for both pages: no script errors, no table wider than 1280px.
+- Both deliverables open with 12%, rounded up, minimum 42 seats, and the eligible-faculty tie rule. The test data gives 46 seats in two rounds under either method, unchanged by the minimum.
+- `codex/` was not touched.
+
+### Suggested next steps
+
+1. Confirm R7.7 against the text of Section 600: a floor on the seat pool, applied after rounding (as built), or something else.
+2. Put both files in front of the committee with the same year's inputs and compare the round narratives (R7.6).
+3. If the Senate prefers Webster, decide on the single capped pass (MethodAnalysis.md, "The rounds matter more"). It changes the policy text in REQUIREMENTS.md sections 3 and 4 and the page's method description, and would replace the round tables with one seat-by-seat table plus an entitlement table.
+4. Confirm the half-seat carry forward under Webster, or replace it with a plain count of ties lost (R4.8, R7.6).
+5. Still open from session 3: try the CSV round trip with real Excel and Google Sheets exports; confirm R7.1 and R7.2 (rounding and tie-rule defaults); decide R7.5 (institution name, year, sign-off block in print); decide whether `codex/` stays in the repository.
