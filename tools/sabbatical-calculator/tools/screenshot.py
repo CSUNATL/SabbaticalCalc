@@ -7,7 +7,7 @@ Opens each built file from file:// at 1280px wide, loads the test data, and:
   - checks that no results table needs horizontal scrolling at 1280px,
   - exercises reordering, one input edit, file loading and one validation error,
   - writes full.png (Hamilton) and full-webster.png (Webster), full-page screenshots with the test data loaded,
-    in the repository root.
+    in the tool folder (tools/sabbatical-calculator/).
 """
 import os
 import sys

@@ -8,12 +8,9 @@ desktop.ini
 .vscode/
 *.swp
 
-# Node (if tooling is added later)
-node_modules/
-
-# Local
-*.log
-
-# Screenshot output from tools/screenshot.py
-full.png
-full-webster.png
+# Data files: never commit student, personnel, or any other real records.
+# A test fixture that holds no real records may be excepted with an explicit
+# !path line below. There are none today.
+*.xlsx
+*.xls
+*.csv
