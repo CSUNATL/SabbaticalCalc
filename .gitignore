@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Data files: never commit student, personnel, or any other real records.
+# A test fixture that holds no real records may be excepted with an explicit
+# !path line below. There are none today.
+*.xlsx
+*.xls
+*.csv

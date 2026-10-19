@@ -1,0 +1,32 @@
+name: sabbatical-calculator
+
+# Every pull request runs this, not only those that touch the tool folder: it is a
+# required check, and a run skipped by a paths filter would leave the check pending
+# and block merging pull requests that change only root files.
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/sabbatical-calculator/**'
+      - '.github/workflows/sabbatical-calculator.yml'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: tools/sabbatical-calculator
+
+jobs:
+  sabbatical-calculator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      # Build, then test. test/build.test.js fails if a committed dist/ file is stale.
+      - run: npm run check
+      # The build must leave the committed dist/ files unchanged.
+      - run: git diff --exit-code -- dist
