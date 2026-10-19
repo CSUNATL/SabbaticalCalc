@@ -286,3 +286,30 @@ After the move, this OneDrive folder is an out-of-date copy, the commands in thi
 1. Run the move in `C:\Users\jeffw\src\TRANSITION.md`, Phase 1 first, from a new Claude Code session in `C:\Users\jeffw\src`.
 2. After the move, copy Claude Code's memory notes to the new folder (they are kept per folder), and change the commit note from "commit on main and push" to "branch, then pull request".
 3. Session 5's next steps 1 to 4, and the rest of 5, still stand.
+
+## Seventh session: Claude Code, October 19, 2026
+
+### The move to faculty-affairs-tools
+
+The plan in `C:\Users\jeffw\src\TRANSITION.md` was run in full; its record is `C:\Users\jeffw\src\TRANSITION-LOG.md`. The repository is now `CSUNATL/faculty-affairs-tools`, and `github.com/CSUNATL/SabbaticalCalc` redirects to it. No new repository in CSUNATL may take the old name, or the redirect stops working.
+
+This project now lives in `tools/sabbatical-calculator/`. Pull request #1 moved it in three commits: `dd4d092` moves the files without changing them, `e7204ca` fixes the wording that assumed the repository root, and `66ea311` adds the repository-level files (the root README.md and AGENTS.md, CODEOWNERS, the pull request template, and the CI workflow). It was merged with a merge commit, `8455609`, so the three commits are on `main` unchanged, and `git log --follow` reaches the history from before the move. CLAUDE.md in this folder became AGENTS.md, and CLAUDE.md now only imports it; the rules for the whole repository are in the root AGENTS.md.
+
+CI (`.github/workflows/sabbatical-calculator.yml`) runs `npm run check` on every pull request and fails if the build changes `dist/`. `main` is protected: a pull request is required, the `sabbatical-calculator` check must pass, the branch must be up to date with `main`, and admins are included, so nothing is pushed straight to `main` any more. Merges are squash-only, using the pull request's title and description, and merged branches are deleted.
+
+Pull request #2 (`a860ba3`) added the MIT `LICENSE` at the repository root, with Jeff as the copyright holder, and the README's "License" section links to it.
+
+The OneDrive folder was copied to `C:\Users\jeffw\archive\SabbaticalCalc-onedrive`, checked, and removed from OneDrive. Claude Code's memory notes were copied to the new folder, and the commit note now says branch, then pull request.
+
+### Environment
+
+Work happens in the clone at `C:\Users\jeffw\src\faculty-affairs-tools`; start Claude Code there, at the repository root, so the copied memory notes load. The commands in this file and in AGENTS.md are run from `tools/sabbatical-calculator/`; the screenshot tool is still `py -3.14 tools/screenshot.py`, from that folder.
+
+### State at end of session 7
+
+- Commits on `main`: `8455609` (pull request #1, the move) and `a860ba3` (pull request #2, `LICENSE`). This close-out is its own pull request.
+- `npm run check`: 50 tests passing. The move left both `dist/` files byte-for-byte unchanged.
+
+### Suggested next steps
+
+1. Session 5's next steps 1 to 4, and the rest of 5, still stand, except the question about `codex/`, which session 6 settled.
