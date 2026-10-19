@@ -260,3 +260,29 @@ Node 24.15 and npm 12.2 are on PATH; `npm run check` and `npm.cmd run check` bot
 3. If the Senate prefers Webster, decide on the single capped pass (MethodAnalysis.md, "The rounds matter more"). It changes the policy text in REQUIREMENTS.md sections 3 and 4 and the page's method description, and would replace the round tables with one seat-by-seat table plus an entitlement table.
 4. Confirm the half-seat carry forward under Webster, or replace it with a plain count of ties lost (R4.8, R7.6).
 5. Still open from session 3: try the CSV round trip with real Excel and Google Sheets exports; confirm R7.1 and R7.2 (rounding and tie-rule defaults); decide R7.5 (institution name, year, sign-off block in print); decide whether `codex/` stays in the repository.
+
+## Sixth session: Claude Code, October 19, 2026
+
+### Retiring `codex/`
+
+Jeff decided that `codex/` leaves the repository (session 5's next step 5). It held Codex's independent implementation of the brief: `sabbaticalapp.html`, its README and BRIEF.md, and `tests/allocation.test.cjs`. That version had diverged from this worksheet since session 3 and was never part of the build or the tests. The folder was removed with `git rm`, and README.md's file list and ARCHITECTURE.md no longer mention it. The earlier sessions above still describe it, as the record of what was done then. To look at it again, `git checkout f0c8cb3 -- codex` restores it from the last commit that had it.
+
+Decision made without instruction: "retire" was read as removing it from the repository, with git history as the archive, rather than moving it somewhere else.
+
+### Planned move to faculty-affairs-tools
+
+Jeff has a step-by-step plan, `TRANSITION.md`, to turn this repository into a department-wide one for Faculty Affairs tools. It renames `CSUNATL/SabbaticalCalc` to `CSUNATL/faculty-affairs-tools` on GitHub (the old address redirects), moves this project into `tools/sabbatical-calculator/`, and moves daily work from this OneDrive folder to a fresh clone at `C:\Users\jeffw\src\faculty-affairs-tools`. A copy is saved at `C:\Users\jeffw\src\TRANSITION.md`. It runs in six phases from a new Claude Code session started in `C:\Users\jeffw\src`, and keeps its own log in `C:\Users\jeffw\src\TRANSITION-LOG.md`. One step was added to the copy: the repository's existing `tools/` folder cannot be moved into `tools/sabbatical-calculator/`, so `tools/screenshot.py` is moved by itself. None of the plan has been run yet.
+
+After the move, this OneDrive folder is an out-of-date copy, the commands in this file and CLAUDE.md are run from `tools/sabbatical-calculator/`, and changes go through a branch and a pull request instead of straight to `main`.
+
+### State at end of session 6
+
+- Commits this session: f0c8cb3 (session 5's close-out and R7.7), and the commit that adds this section and removes `codex/`. Both pushed to `origin/main`.
+- `npm run check`: 50 tests passing. No `src/` change, so both `dist/` files are unchanged.
+- `C:\Users\jeffw\src\TRANSITION.md` is ready; Phase 1 has not been started.
+
+### Suggested next steps
+
+1. Run the move in `C:\Users\jeffw\src\TRANSITION.md`, Phase 1 first, from a new Claude Code session in `C:\Users\jeffw\src`.
+2. After the move, copy Claude Code's memory notes to the new folder (they are kept per folder), and change the commit note from "commit on main and push" to "branch, then pull request".
+3. Session 5's next steps 1 to 4, and the rest of 5, still stand.

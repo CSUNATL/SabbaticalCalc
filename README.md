@@ -26,7 +26,6 @@ build.js                          splices src/logic.js into src/sabbatical-alloc
 test/logic.test.js                allocation tests, including randomized invariant checks
 test/build.test.js                checks that dist/ matches src/ and is self-contained
 tools/screenshot.py               optional headless render for visual review
-codex/                            an independent implementation of the same brief, kept for comparison
 ```
 
 `REQUIREMENTS.md` states what the tool must do and which policy questions are still open. `ARCHITECTURE.md` describes the structure. `HANDOFF.md` records the design conversation and the reasoning behind the non-obvious rules. `CLAUDE.md` holds the working instructions for Claude Code.
